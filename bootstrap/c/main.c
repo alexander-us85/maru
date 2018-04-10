@@ -1,10 +1,3 @@
-// last edited: 2013-08-20 03:13:50 by piumarta on emilia
-
-#define DEMO_BITS	1
-
-#define _ISOC99_SOURCE	1
-#define _BSD_SOURCE	1
-
 #include <stdio.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -13,47 +6,37 @@
 #include <signal.h>
 #include <stdint.h>
 
-// #include <stddef.h>
-// #include <string.h>
-// #include <sys/types.h>
+#include "ffi.h"
 
-#if defined(__MACH__)
-# include <ffi/ffi.h>
-#else
-# include <ffi.h>
-#endif
-
-// #include <assert.h>
 
 extern int isatty(int);
 
-#if defined(WIN32)
-# include <malloc.h>
-# define swnprintf(BUF, SIZE, FMT, ARG) swprintf(BUF, FMT, ARG)
-#else
-# define swnprintf swprintf
+#if defined(_MSC_VER)
+    #if defined(WIN32)
+        #include <malloc.h>
+        #define swnprintf(BUF, SIZE, FMT, ARG) swprintf(BUF, FMT, ARG)
+    #else
+        #define swnprintf swprintf
+    #endif
+    #include <basetsd.h>
+    typedef SSIZE_T ssize_t;
 #endif
 
-#if defined(_MSC_VER)
-#include <basetsd.h>
-    typedef SSIZE_T ssize_t;
-#endif;
-
 // #define	TAG_INT	1
-// //#define	LIB_GC	1
+// #define	LIB_GC	1
 
 #if defined(NDEBUG)
-# define GC_APP_HEADER	int type;
+    #define GC_APP_HEADER int type;
 #else
-# define GC_APP_HEADER	int printing, type;
+    #define GC_APP_HEADER	int printing, type;
 #endif
 
 #define GC_SAVE		1
 
 #if (LIB_GC)
-# include "libgc.c"
+    #include "libgc.c"
 #else
-# include "gc.c"
+    #include "gc.c"
 #endif
 #include "wcs.c"
 #include "buffer.c"
@@ -89,27 +72,27 @@ typedef struct {
 
 enum {
     Undefined, Data, Long, Double, String, Symbol, Pair, _Array, Array, Expr, Form, Fixed, Subr,
-//  Variable, Env, Context
+    //Variable, Env, Context
 };
 
 typedef int64_t long_t;
 
 #define LD	"lld"
 
-struct Data { int array[0]; };
-struct Long	{ long_t    bits; };
+struct Data     { int array[0]; };
+struct Long	    { long_t    bits; };
 struct Double	{ double    bits; };
 struct String	{ oop	    size;  wchar_t *bits; };	/* bits is in managed memory */
 struct Symbol	{ wchar_t  *bits; int flags; };
-struct Pair	{ oop	    head, tail, source; };
+struct Pair	    { oop	    head, tail, source; };
 struct Array	{ oop	    size, _array; };
-struct Expr	{ oop	    name, definition, environment, profile; };
-struct Form	{ oop	    function, symbol; };
+struct Expr	    { oop	    name, definition, environment, profile; };
+struct Form	    { oop	    function, symbol; };
 struct Fixed	{ oop	    function; };
-struct Subr	{ wchar_t  *name;  imp_t imp;  proto_t *sig;  int profile; };
-// struct Variable	{ oop	    name, value, env, index, type; };
-// struct Env	{ oop	    parent, level, offset, bindings, stable; };
-// struct Context	{ oop	    home, env, bindings, callee, pc; };
+struct Subr	    { wchar_t  *name;  imp_t imp;  proto_t *sig;  int profile; };
+//struct Variable	{ oop	    name, value, env, index, type; };
+//struct Env	    { oop	    parent, level, offset, bindings, stable; };
+//struct Context	{ oop	    home, env, bindings, callee, pc; };
 
 union Object {
     struct Data		Data;
@@ -131,67 +114,102 @@ union Object {
 static void fatal(char *reason, ...);
 
 #if !defined(NDEBUG)
-# define setType(OBJ, TYPE)		ptr2hdr(OBJ)->printing= 0;  (ptr2hdr(OBJ)->type= (TYPE))
-#else
-# define setType(OBJ, TYPE)		(ptr2hdr(OBJ)->type= (TYPE))
+    #define setType(OBJ, TYPE) ptr2hdr(OBJ)->printing= 0; (ptr2hdr(OBJ)->type= (TYPE))
+#else                          
+    #define setType(OBJ, TYPE) (ptr2hdr(OBJ)->type= (TYPE))
 #endif
 
 #if (TAG_INT)
-    static inline int getType(oop obj)	{ return obj ? (((long)obj & 1) ? Long : ptr2hdr(obj)->type) : Undefined; }
+    static inline int getType(oop obj)	{ 
+        return obj ? (((long)obj & 1) ? Long : ptr2hdr(obj)->type) : Undefined; 
+    }
 #else
-    static inline int getType(oop obj)	{ return obj ? ptr2hdr(obj)->type : Undefined; }
-#endif
-
-#define is(TYPE, OBJ)			((OBJ) && (TYPE == getType(OBJ)))
-
-#if defined(NDEBUG)
-# define checkType(OBJ, TYPE) OBJ
-#else
-# define checkType(OBJ, TYPE) _checkType(OBJ, TYPE, #TYPE, __FILE__, __LINE__)
-    static inline oop _checkType(oop obj, int type, char *name, char *file, int line)
-    {
-	if (obj && !((long)obj & 1) && !ptr2hdr(obj)->used)	fatal("%s:%i: attempt to access dead object %s\n", file, line, name);
-	if (!is(type, obj))					fatal("%s:%i: typecheck failed for %s (%i != %i)\n", file, line, name, type, getType(obj));
-	return obj;
+    static inline int getType(oop obj)	{ 
+        return obj ? ptr2hdr(obj)->type : Undefined; 
     }
 #endif
 
-#define get(OBJ, TYPE, FIELD)		(checkType(OBJ, TYPE)->TYPE.FIELD)
+#define is(TYPE, OBJ) ((OBJ) && (TYPE == getType(OBJ)))
+
+#if defined(NDEBUG)
+    #define checkType(OBJ, TYPE) OBJ
+#else
+    #define checkType(OBJ, TYPE) _checkType(OBJ, TYPE, #TYPE, __FILE__, __LINE__)
+    static inline oop _checkType(oop obj, int type, char *name, char *file, int line)
+    {
+        if (obj && !((long)obj & 1) && !ptr2hdr(obj)->used) {
+            fatal("%s:%i: attempt to access dead object %s\n", file, line, name);
+        }
+        if (!is(type, obj)) {
+            fatal("%s:%i: typecheck failed for %s (%i != %i)\n", file, line, name, type, getType(obj));
+        }
+	    return obj;
+    }
+#endif
+
+#define get(OBJ, TYPE, FIELD)		    (checkType(OBJ, TYPE)->TYPE.FIELD)
 #define set(OBJ, TYPE, FIELD, VALUE)	(checkType(OBJ, TYPE)->TYPE.FIELD= (VALUE))
 
-#define getHead(OBJ)	get(OBJ, Pair,head)
-#define getTail(OBJ)	get(OBJ, Pair,tail)
+#define getHead(OBJ)	                get(OBJ, Pair,head)
+#define getTail(OBJ)	                get(OBJ, Pair,tail)
 
-#define setHead(OBJ, VAL)	set(OBJ, Pair,head, VAL)
-#define setTail(OBJ, VAL)	set(OBJ, Pair,tail, VAL)
+#define setHead(OBJ, VAL)	            set(OBJ, Pair,head, VAL)
+#define setTail(OBJ, VAL)	            set(OBJ, Pair,tail, VAL)
 
-static oop car(oop obj)			{ return is(Pair, obj) ? getHead(obj) : nil; }
-static oop cdr(oop obj)			{ return is(Pair, obj) ? getTail(obj) : nil; }
+static oop car(oop obj)			        { return is(Pair, obj) ? getHead(obj) : nil; }
+static oop cdr(oop obj)			        { return is(Pair, obj) ? getTail(obj) : nil; }
+                                        
+static oop caar(oop obj)		        { return car(car(obj)); }
+static oop cadr(oop obj)		        { return car(cdr(obj)); }
+static oop cdar(oop obj)		        { return cdr(car(obj)); }
+static oop cddr(oop obj)		        { return cdr(cdr(obj)); }
+static oop caaar(oop obj)		        { return car(car(car(obj))); }
+static oop cadar(oop obj)		        { return car(cdr(car(obj))); }
+static oop caddr(oop obj)		        { return car(cdr(cdr(obj))); }
+static oop cadddr(oop obj)		        { return car(cdr(cdr(cdr(obj)))); }
+                                        
+#define getVar(X)			            getTail(X)
+#define setVar(X, V)			        setTail(X, V)
 
-static oop caar(oop obj)		{ return car(car(obj)); }
-static oop cadr(oop obj)		{ return car(cdr(obj)); }
-static oop cdar(oop obj)		{ return cdr(car(obj)); }
-static oop cddr(oop obj)		{ return cdr(cdr(obj)); }
-// //static oop caaar(oop obj)		{ return car(car(car(obj))); }
-// //static oop cadar(oop obj)		{ return car(cdr(car(obj))); }
-static oop caddr(oop obj)		{ return car(cdr(cdr(obj))); }
-// static oop cadddr(oop obj)		{ return car(cdr(cdr(cdr(obj)))); }
+static oop _newBits(int type, size_t size)	{ oop obj= GC_malloc_atomic(size); setType(obj, type);  return obj; }
+static oop _newOops(int type, size_t size)	{ oop obj= GC_malloc(size);		   setType(obj, type);  return obj; }
 
-#define getVar(X)			getTail(X)
-#define setVar(X, V)			setTail(X, V)
-
-static oop _newBits(int type, size_t size)	{ oop obj= GC_malloc_atomic(size);	setType(obj, type);  return obj; }
-static oop _newOops(int type, size_t size)	{ oop obj= GC_malloc(size);		setType(obj, type);  return obj; }
-
-#define newBits(TYPE)	_newBits(TYPE, sizeof(struct TYPE))
-#define newOops(TYPE)	_newOops(TYPE, sizeof(struct TYPE))
+#define newBits(TYPE) _newBits(TYPE, sizeof(struct TYPE))
+#define newOops(TYPE) _newOops(TYPE, sizeof(struct TYPE))
 
 static char *argv0;
 
-static oop symbols= nil, globals= nil, globalNamespace= nil, expanders= nil, encoders= nil, evaluators= nil, applicators= nil, backtrace= nil, arguments= nil, input= nil, output= nil;
-static int traceDepth= 0;
-static oop traceStack= nil, currentPath= nil, currentLine= nil, currentSource= nil;
-static oop s_locals= nil, s_set= nil, s_define= nil, s_let= nil, s_lambda= nil, s_quote= nil, s_quasiquote= nil, s_unquote= nil, s_unquote_splicing= nil, s_t= nil, s_dot= nil, s_etc= nil, s_bracket= nil, s_brace= nil, s_main= nil;
+static oop symbols            = nil, 
+           globals            = nil, 
+           globalNamespace    = nil, 
+           expanders          = nil, 
+           encoders           = nil, 
+           evaluators         = nil, 
+           applicators        = nil, 
+           backtrace          = nil, 
+           arguments          = nil, 
+           input              = nil, 
+           output             = nil;
+static int traceDepth         = 0;
+static oop traceStack         = nil, 
+           currentPath        = nil, 
+           currentLine        = nil, 
+           currentSource      = nil;
+static oop s_locals           = nil, 
+           s_set              = nil, 
+           s_define           = nil, 
+           s_let              = nil, 
+           s_lambda           = nil, 
+           s_quote            = nil, 
+           s_quasiquote       = nil, 
+           s_unquote          = nil, 
+           s_unquote_splicing = nil, 
+           s_t                = nil, 
+           s_dot              = nil, 
+           s_etc              = nil, 
+           s_bracket          = nil, 
+           s_brace            = nil, 
+           s_main             = nil;
 // static oop f_set= nil, f_quote= nil, f_lambda= nil, f_let= nil, f_define;
 
 static int opt_b= 0, opt_g= 0, opt_O= 0, opt_p= 0, opt_v= 0;
@@ -200,37 +218,66 @@ static int opt_b= 0, opt_g= 0, opt_O= 0, opt_p= 0, opt_v= 0;
 static oop newData(size_t len)		{ return _newBits(Data, len); }
 
 #if (TAG_INT)
-  static inline int isLong(oop x)	{ return (((long)x & 1) || Long == getType(x)); }
-  static inline oop newLong(long_t x)	{ if ((x ^ (x << 1)) < 0) { oop obj= newBits(Long);  set(obj, Long,bits, x);  return obj; }  return ((oop)((x << 1) | 1)); }
-  static inline long_t getLong(oop x)	{ if ((long)x & 1) return (long)x >> 1;	 return get(x, Long,bits); }
+    static inline int isLong(oop x) { 
+        return (((long)x & 1) || Long == getType(x)); 
+    }
+
+    static inline oop newLong(long_t x) { 
+        if ((x ^ (x << 1)) < 0) { 
+            oop obj = newBits(Long);  
+            set(obj, Long,bits, x);  
+            return obj; 
+        }  
+        return ((oop)((x << 1) | 1)); 
+    }
+    static inline long_t getLong(oop x)	{ 
+        if ((long)x & 1) return (long)x >> 1;	 
+        return get(x, Long,bits); 
+    }
 #else
-# define     isLong(X)		is(Long, (X))
-  static oop newLong(long bits)	{ oop obj= newBits(Long);  set(obj, Long,bits, bits);  return obj; }
-# define     getLong(X)		get((X), Long,bits)
+    #define isLong(X) is(Long, (X))
+    static oop newLong(long bits) { 
+        oop obj = newBits(Long);  
+        set(obj, Long,bits, bits);  
+        return obj; 
+    }
+    #define getLong(X) get((X), Long,bits)
 #endif
 
-static void   setDouble(oop obj, double bits)	{		memcpy(&obj->Double.bits, &bits, sizeof(bits)); }
-static double getDouble(oop obj)		{ double bits;	memcpy(&bits, &obj->Double.bits, sizeof(bits));	 return bits; }
+static void setDouble(oop obj, double bits)	{
+    memcpy(&obj->Double.bits, &bits, sizeof(bits)); 
+}
 
-#define isDouble(X)			is(Double, (X))
-#define isPair(X)			is(Pair, (X))
+static double getDouble(oop obj) {
+    double bits;	
+    memcpy(&bits, &obj->Double.bits, sizeof(bits));	 
+    return bits; 
+}
 
-static inline int isNumeric(oop obj)	{ return isLong(obj) || isDouble(obj); }
+#define isDouble(X)	is(Double, (X))
+#define isPair(X)	is(Pair, (X))
 
-static oop newDouble(double bits)	{ oop obj= newBits(Double);  setDouble(obj, bits);  return obj; }
+static inline int isNumeric(oop obj) { return isLong(obj) || isDouble(obj); }
+
+static oop newDouble(double bits) { 
+    oop obj = newBits(Double);  
+    setDouble(obj, bits);  
+    return obj; 
+}
 
 static oop _newString(size_t len)
 {
-    wchar_t *gstr= (wchar_t *)_newBits(-1, sizeof(wchar_t) * (len + 1));	GC_PROTECT(gstr);	/* + 1 to ensure null terminator */
-    oop	      obj= newOops(String);						GC_PROTECT(obj);
-    set(obj, String,size, newLong(len));					GC_UNPROTECT(obj);
-    set(obj, String,bits, gstr);						GC_UNPROTECT(gstr);
+    wchar_t *gstr = (wchar_t *)_newBits(-1, sizeof(wchar_t) * (len + 1)); /* + 1 to ensure null terminator */
+    GC_PROTECT(gstr);	
+    oop obj = newOops(String);			 GC_PROTECT(obj);
+    set(obj, String,size, newLong(len)); GC_UNPROTECT(obj);
+    set(obj, String,bits, gstr);		 GC_UNPROTECT(gstr);
     return obj;
 }
 
 static oop newStringN(wchar_t *cstr, size_t len)
 {
-    oop obj= _newString(len);
+    oop obj = _newString(len);
     memcpy(get(obj, String,bits), cstr, sizeof(wchar_t) * len);
     return obj;
 }
@@ -245,18 +292,27 @@ static int stringLength(oop string)
     return getLong(get(string, String,size));
 }
 
-static oop newSymbol(wchar_t *cstr)	{ oop obj= newBits(Symbol);	set(obj, Symbol,bits, wcsdup(cstr));			return obj; }
+static oop newSymbol(wchar_t *cstr)	{ 
+    oop obj= newBits(Symbol);	
+    set(obj, Symbol,bits, wcsdup(cstr));			
+    return obj; 
+}
 
 static int symbolLength(oop symbol)
 {
     return wcslen(get(symbol, Symbol,bits));
 }
 
-static oop cons(oop head, oop tail)	{ oop obj= newOops(Pair);	set(obj, Pair,head, head);  set(obj, Pair,tail, tail);	return obj; }
+static oop cons(oop head, oop tail)	{ 
+    oop obj = newOops(Pair);	
+    set(obj, Pair,head, head);  
+    set(obj, Pair,tail, tail);	
+    return obj; 
+}
 
 static oop newPairFrom(oop head, oop tail, oop source)
 {
-    oop obj= newOops(Pair);
+    oop obj = newOops(Pair);
     set(obj, Pair,head,	head);
     set(obj, Pair,tail,	tail);
     set(obj, Pair,source, get(source, Pair,source));
@@ -265,11 +321,12 @@ static oop newPairFrom(oop head, oop tail, oop source)
 
 static oop newArray(int size)
 {
-    int cap=  size ? size : 1;
-    oop elts= _newOops(_Array, sizeof(oop) * cap);	GC_PROTECT(elts);
-    oop obj=   newOops( Array);				GC_PROTECT(obj);
+    int cap  = size ? size : 1;
+    oop elts = _newOops(_Array, sizeof(oop) * cap);	GC_PROTECT(elts);
+    oop obj  = newOops( Array);				        GC_PROTECT(obj);
     set(obj, Array,_array, elts);
-    set(obj, Array,size, newLong(size));		GC_UNPROTECT(obj);  GC_UNPROTECT(elts);
+    set(obj, Array,size, newLong(size));		    GC_UNPROTECT(obj);  
+    GC_UNPROTECT(elts);
     return obj;
 }
 
@@ -281,10 +338,10 @@ static int arrayLength(oop obj)
 static oop arrayAt(oop array, int index)
 {
     if (is(Array, array)) {
-	oop elts= get(array, Array,_array);
-	int size= arrayLength(array);
-	if ((unsigned)index < (unsigned)size)
-	    return ((oop *)elts)[index];
+	    oop elts = get(array, Array,_array);
+	    int size = arrayLength(array);
+	    if ((unsigned)index < (unsigned)size)
+	        return ((oop *)elts)[index];
     }
     return nil;
 }
@@ -292,21 +349,21 @@ static oop arrayAt(oop array, int index)
 static oop arrayAtPut(oop array, int index, oop val)
 {
     if (is(Array, array)) {
-	int size= arrayLength(array);
-	oop elts= get(array, Array,_array);
-	if ((unsigned)index >= (unsigned)size) {
-	    GC_PROTECT(array);
-	    int cap= GC_size(elts) / sizeof(oop);
-	    if (index >= cap) {
-		while (cap <= index) cap *= 2;
-		oop oops= _newOops(_Array, sizeof(oop) * cap);
-		memcpy((oop *)oops, (oop *)elts, sizeof(oop) * size);
-		elts= set(array, Array,_array, oops);
+	    int size = arrayLength(array);
+	    oop elts = get(array, Array,_array);
+	    if ((unsigned)index >= (unsigned)size) {
+	        GC_PROTECT(array);
+	        int cap = GC_size(elts) / sizeof(oop);
+	        if (index >= cap) {
+		        while (cap <= index) cap *= 2;
+		        oop oops = _newOops(_Array, sizeof(oop) * cap);
+		        memcpy((oop *)oops, (oop *)elts, sizeof(oop) * size);
+		        elts = set(array, Array,_array, oops);
+	        }
+	        set(array, Array,size, newLong(index + 1));
+	        GC_UNPROTECT(array);
 	    }
-	    set(array, Array,size, newLong(index + 1));
-	    GC_UNPROTECT(array);
-	}
-	return ((oop *)elts)[index]= val;
+	    return ((oop *)elts)[index]= val;
     }
     return nil;
 }
@@ -318,12 +375,12 @@ static oop arrayAppend(oop array, oop val)
 
 static oop arrayInsert(oop obj, size_t index, oop value)
 {
-    size_t len= arrayLength(obj);
+    size_t len = arrayLength(obj);
     arrayAppend(obj, value);
     if (index < len) {
-	oop  elts= get(obj, Array,_array);
-	oop *oops= (oop *)elts + index;
-	memmove(oops + 1, oops, sizeof(oop) * (len - index));
+	    oop  elts = get(obj, Array,_array);
+	    oop *oops = (oop *)elts + index;
+	    memmove(oops + 1, oops, sizeof(oop) * (len - index));
     }
     arrayAtPut(obj, index, value);
     return value;
@@ -332,8 +389,9 @@ static oop arrayInsert(oop obj, size_t index, oop value)
 static oop oopAt(oop obj, int index)
 {
     if (obj && !isLong(obj) && !GC_atomic(obj)) {
-	int size= GC_size(obj) / sizeof(oop);
-	if ((unsigned)index < (unsigned)size) return ((oop *)obj)[index];
+	    int size = GC_size(obj) / sizeof(oop);
+	    if ((unsigned)index < (unsigned)size) 
+            return ((oop *)obj)[index];
     }
     return nil;
 }
@@ -341,27 +399,38 @@ static oop oopAt(oop obj, int index)
 static oop oopAtPut(oop obj, int index, oop value)
 {
     if (obj && !isLong(obj) && !GC_atomic(obj)) {
-	int size= GC_size(obj) / sizeof(oop);
-	if ((unsigned)index < (unsigned)size) return ((oop *)obj)[index]= value;
+	    int size = GC_size(obj) / sizeof(oop);
+	    if ((unsigned)index < (unsigned)size) 
+            return ((oop *)obj)[index]= value;
     }
     return nil;
 }
 
 static oop newExpr(oop defn, oop env)
 {
-    oop obj= newOops(Expr);			GC_PROTECT(obj);
+    oop obj = newOops(Expr);			    GC_PROTECT(obj);
     set(obj, Expr,definition,  defn);
     set(obj, Expr,environment, env);
     set(obj, Expr,profile,     newLong(0));	GC_UNPROTECT(obj);
     return obj;
 }
 
-static oop newForm(oop fn, oop sym)	{ oop obj= newOops(Form);	set(obj, Form,function, fn);	set(obj, Form,symbol, sym);	return obj; }
-static oop newFixed(oop function)	{ oop obj= newOops(Fixed);	set(obj, Fixed,function, function);				return obj; }
+static oop newForm(oop fn, oop sym)	{ 
+    oop obj = newOops(Form);	
+    set(obj, Form,function, fn);	
+    set(obj, Form,symbol, sym);	
+    return obj; 
+}
+
+static oop newFixed(oop function) { 
+    oop obj = newOops(Fixed);	
+    set(obj, Fixed,function, function);
+    return obj; 
+}
 
 static oop newSubr(wchar_t *name, imp_t imp, proto_t *sig)
 {
-    oop obj= newBits(Subr);
+    oop obj = newBits(Subr);
     set(obj, Subr,name,	   name);
     set(obj, Subr,imp,	   imp);
     set(obj, Subr,sig,	   sig);
@@ -435,10 +504,9 @@ static void oprintf(char *fmt, ...);
 static oop findEnvironment(oop env)
 {
     while (is(Pair, env)) {
-	//oprintf("findEnv: %P\n", caar(env));
-	oop ass= getHead(env);
-	if (is(Pair, ass) && getTail(ass) == env) return env;
-	env= getTail(env);
+	    oop ass = getHead(env);
+	    if (is(Pair, ass) && getTail(ass) == env) return env;
+	    env = getTail(env);
     }
     return nil;
 }
@@ -446,29 +514,29 @@ static oop findEnvironment(oop env)
 static oop findVariable2(oop env, oop name)
 {
     while (env) {
-	oop ass= getHead(env);
-	if (name == car(ass)) return ass;
-	env= getTail(env);
+	    oop ass = getHead(env);
+	    if (name == car(ass)) return ass;
+	    env = getTail(env);
     }
     return nil;
 }
 
 #define GLOBAL_CACHE_SIZE 2003 // 257 // 1021 // 7919
 
-static oop _globalCache= 0;
+static oop _globalCache = 0;
 
 static oop findVariable(oop env, oop name)
 {
     while (env) {
-	if (env == globalNamespace) {
-	    long hash= ((long)name) % GLOBAL_CACHE_SIZE;
-	    oop ent= ((oop *)_globalCache)[hash];
-	    if ((nil != ent) && (name == getHead(ent))) return ent;
-	    return ((oop *)_globalCache)[hash]= findVariable2(env, name);
-	}
-	oop ass= getHead(env);
-	if (name == car(ass)) return ass;
-	env= getTail(env);
+	    if (env == globalNamespace) {
+	        long hash = ((long)name) % GLOBAL_CACHE_SIZE;
+	        oop  ent  = ((oop *)_globalCache)[hash];
+	        if ((nil != ent) && (name == getHead(ent))) return ent;
+	        return ((oop *)_globalCache)[hash]= findVariable2(env, name);
+	    }
+	    oop ass = getHead(env);
+	    if (name == car(ass)) return ass;
+	    env = getTail(env);
     }
     return nil;
 }
@@ -484,9 +552,9 @@ static oop findNamespaceVariable(oop env, oop name)
 	    if ((nil != ent) && (name == getHead(ent))) return ent;
 	    return ((oop *)_globalCache)[hash]= findVariable2(env, name);
 	}
-	oop ass= car(beg);
+	oop ass = car(beg);
 	if (name == car(ass)) return ass;
-	beg= getTail(beg);
+	beg = getTail(beg);
     }
     return nil;
 }
@@ -498,47 +566,49 @@ static oop lookup(oop env, oop name)
 
 static oop define(oop env, oop name, oop value)
 {
-    env= findEnvironment(env);					if (!env) fatal("failed to find an environment");
+    env = findEnvironment(env);					
+    if (!env) fatal("failed to find an environment");
 #if 0
-    oop binding= findVariable(env, name);
+    oop binding = findVariable(env, name);
     if (binding) {
-	setTail(binding, value);
-    }
-    else {
-	binding= cons(nil, getTail(env));
-	setTail(env, binding);
-	binding= setHead(binding, cons(name, value));
+	    setTail(binding, value);
+    } else {
+	    binding = cons(nil, getTail(env));
+	    setTail(env, binding);
+	    binding = setHead(binding, cons(name, value));
     }
 #else
-    oop binding= cons(nil, getTail(env));
+    oop binding = cons(nil, getTail(env));
     setTail(env, binding);
-    binding= setHead(binding, cons(name, value));
+    binding = setHead(binding, cons(name, value));
 #endif
     return binding;
 }
 
 // static int isGlobal(oop var)
 // {
-//   oop env= get(var, Variable,env);
+//   oop env = get(var, Variable,env);
 //   return (nil != env) && (0 == getLong(get(env, Env,level)));
 // }
 
-static oop newBool(int b)		{ return b ? s_t : nil; }
+static oop newBool(int b) { return b ? s_t : nil; }
 
 static oop intern(wchar_t *string)
 {
-    ssize_t lo= 0, hi= arrayLength(symbols) - 1, c= 0;
-    oop s= nil;
+    ssize_t lo = 0, 
+            hi = arrayLength(symbols) - 1, 
+            c  = 0;
+    oop s = nil;
     while (lo <= hi) {
-	size_t m= (lo + hi) / 2;
-	s= arrayAt(symbols, m);
-	c= wcscmp(string, get(s, Symbol,bits));
-	if	(c < 0)	hi= m - 1;
-	else if (c > 0)	lo= m + 1;
-	else		return s;
+	    size_t m = (lo + hi) / 2;
+	    s = arrayAt(symbols, m);
+	    c = wcscmp(string, get(s, Symbol,bits));
+	    if (c < 0)      hi = m - 1;
+	    else if (c > 0)	lo = m + 1;
+	    else return s;
     }
     GC_PROTECT(s);
-    s= newSymbol(string);
+    s = newSymbol(string);
     arrayInsert(symbols, lo, s);
     GC_UNPROTECT(s);
     return s;
@@ -546,65 +616,67 @@ static oop intern(wchar_t *string)
 
 #include "chartab.h"
 
-static int isPrint(int c)	{ return (0 <= c && c <= 127 && (CHAR_PRINT    & chartab[c])) || (c >= 128); }
-static int isAlpha(int c)	{ return (0 <= c && c <= 127 && (CHAR_ALPHA    & chartab[c])) || (c >= 128); }
-static int isDigit10(int c)	{ return (0 <= c && c <= 127 && (CHAR_DIGIT10  & chartab[c])); }
-static int isDigit16(int c)	{ return (0 <= c && c <= 127 && (CHAR_DIGIT16  & chartab[c])); }
-static int isLetter(int c)	{ return (0 <= c && c <= 127 && (CHAR_LETTER   & chartab[c])) || (c >= 128); }
+static int isPrint(int c)	{ return (0 <= c && c <= 127 && (CHAR_PRINT   & chartab[c])) || (c >= 128); }
+static int isAlpha(int c)	{ return (0 <= c && c <= 127 && (CHAR_ALPHA   & chartab[c])) || (c >= 128); }
+static int isDigit10(int c)	{ return (0 <= c && c <= 127 && (CHAR_DIGIT10 & chartab[c])); }
+static int isDigit16(int c)	{ return (0 <= c && c <= 127 && (CHAR_DIGIT16 & chartab[c])); }
+static int isLetter(int c)	{ return (0 <= c && c <= 127 && (CHAR_LETTER  & chartab[c])) || (c >= 128); }
 
-#define DONE	((oop)-4)	/* cannot be a tagged immediate */
+#define DONE ((oop)-4)	/* cannot be a tagged immediate */
 
 static void beginSource(wchar_t *path)
 {
-    currentPath= newString(path);
-    currentLine= newLong(1);
-    currentSource= cons(currentSource, nil);
+    currentPath   = newString(path);
+    currentLine   = newLong(1);
+    currentSource = cons(currentSource, nil);
     set(currentSource, Pair,source, cons(currentPath, currentLine));
 }
 
 static void advanceSource(void)
 {
-    currentLine= newLong(getLong(currentLine) + 1);
+    currentLine = newLong(getLong(currentLine) + 1);
     set(currentSource, Pair,source, cons(currentPath, currentLine));
 }
 
 static void endSource(void)
 {
-    currentSource= get(currentSource, Pair,head);
-    oop src= get(currentSource, Pair,source);
-    currentPath= car(src);
-    currentLine= cdr(src);
+    currentSource = get(currentSource, Pair,head);
+    oop src       = get(currentSource, Pair,source);
+    currentPath   = car(src);
+    currentLine   = cdr(src);
 }
 
 static oop readExpr(FILE *fp);
 
 static oop readList(FILE *fp, int delim)
 {
-    oop head= nil, tail= head, obj= nil;
+    oop head = nil, 
+        tail = head, 
+        obj  = nil;
     GC_PROTECT(head);
     GC_PROTECT(obj);
-    obj= readExpr(fp);
+    obj = readExpr(fp);
     if (obj == DONE) goto eof;
-    head= tail= newPairFrom(obj, nil, currentSource);
+    head = tail = newPairFrom(obj, nil, currentSource);
     for (;;) {
-	obj= readExpr(fp);
-	if (obj == DONE) goto eof;
-	if (obj == s_dot) {
 	    obj= readExpr(fp);
-	    if (obj == DONE)		fatal("missing item after .");
-	    tail= set(tail, Pair,tail, obj);
-	    obj= readExpr(fp);
-	    if (obj != DONE)		fatal("extra item after .");
-	    goto eof;
-	}
-	obj= newPairFrom(obj, nil, currentSource);
-	tail= set(tail, Pair,tail, obj);
+	    if (obj == DONE) goto eof;
+	    if (obj == s_dot) {
+	        obj= readExpr(fp);
+	        if (obj == DONE) fatal("missing item after .");
+	        tail = set(tail, Pair,tail, obj);
+	        obj = readExpr(fp);
+	        if (obj != DONE) fatal("extra item after .");
+	        goto eof;
+	    }
+	    obj  = newPairFrom(obj, nil, currentSource);
+	    tail = set(tail, Pair,tail, obj);
     }
-eof:;
+    eof:;
     int c= getwc(fp);
     if (c != delim) {
-	if (c < 0) fatal("EOF while reading list");
-	fatal("mismatched delimiter: expected '%c' found '%c'", delim, c);
+	    if (c < 0) fatal("EOF while reading list");
+	    fatal("mismatched delimiter: expected '%c' found '%c'", delim, c);
     }
     GC_UNPROTECT(obj);
     GC_UNPROTECT(head);
@@ -649,47 +721,50 @@ static int isOctal(wint_t c)
 static int readChar(wint_t c, FILE *fp)
 {
     if ('\\' == c) {
-	c= getwc(fp);
-	switch (c) {
-	    case 'a':   return '\a';
-	    case 'b':   return '\b';
-	    case 'f':   return '\f';
-	    case 'n':   return '\n';
-	    case 'r':   return '\r';
-	    case 't':   return '\t';
-	    case 'v':   return '\v';
-	    case 'u': {
-		wint_t a= getwc(fp), b= getwc(fp), c= getwc(fp), d= getwc(fp);
-		return (digitValue(a) << 12) + (digitValue(b) << 8) + (digitValue(c) << 4) + digitValue(d);
+	    c= getwc(fp);
+	    switch (c) {
+	        case 'a':   return '\a';
+	        case 'b':   return '\b';
+	        case 'f':   return '\f';
+	        case 'n':   return '\n';
+	        case 'r':   return '\r';
+	        case 't':   return '\t';
+	        case 'v':   return '\v';
+	        case 'u': {
+	    	    wint_t a = getwc(fp), 
+                       b = getwc(fp), 
+                       c = getwc(fp), 
+                       d = getwc(fp);
+	    	    return (digitValue(a) << 12) + (digitValue(b) << 8) + (digitValue(c) << 4) + digitValue(d);
+	        }
+	        case 'x': {
+	    	    int x = 0;
+	    	    if (isHexadecimal(c= getwc(fp))) {
+	    	        x = digitValue(c);
+	    	        if (isHexadecimal(c= getwc(fp))) {
+	    		        x = x * 16 + digitValue(c);
+	    		        c= getwc(fp);
+	    	        }
+	    	    }
+	    	    ungetwc(c, fp);
+	    	    return x;
+	        }
+            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
+	    	    int x = digitValue(c);
+	    	    if (isOctal(c = getwc(fp))) {
+	    	        x = x * 8 + digitValue(c);
+	    	        if (isOctal(c = getwc(fp))) {
+	    		        x = x * 8 + digitValue(c);
+	    		        c = getwc(fp);
+	    	        }
+	    	    }
+	    	    ungetwc(c, fp);
+	    	    return x;
+	        }
+	        default:
+	    	    if (isAlpha(c) || isDigit10(c)) fatal("illegal character escape: \\%c", c);
+	    	    return c;
 	    }
-	    case 'x': {
-		int x= 0;
-		if (isHexadecimal(c= getwc(fp))) {
-		    x= digitValue(c);
-		    if (isHexadecimal(c= getwc(fp))) {
-			x= x * 16 + digitValue(c);
-			c= getwc(fp);
-		    }
-		}
-		ungetwc(c, fp);
-		return x;
-	    }
-        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
-		int x= digitValue(c);
-		if (isOctal(c= getwc(fp))) {
-		    x= x * 8 + digitValue(c);
-		    if (isOctal(c= getwc(fp))) {
-			x= x * 8 + digitValue(c);
-			c= getwc(fp);
-		    }
-		}
-		ungetwc(c, fp);
-		return x;
-	    }
-	    default:
-		if (isAlpha(c) || isDigit10(c)) fatal("illegal character escape: \\%c", c);
-		return c;
-	}
     }
     return c;
 }
@@ -697,139 +772,137 @@ static int readChar(wint_t c, FILE *fp)
 static oop readExpr(FILE *fp)
 {
     for (;;) {
-	wint_t c= getwc(fp);
-	switch (c) {
-	    case WEOF: {
-		return DONE;
-	    }
-	    case '\n': {
-		while ('\r' == (c= getwc(fp)));
-		if (c >= 0) ungetwc(c, fp);
-		advanceSource();
-		continue;
-	    }
-	    case '\r': {
-		while ('\n' == (c= getwc(fp)));
-		ungetwc(c, fp);
-		advanceSource();
-		continue;
-	    }
-	    case '\t':  case ' ': {
-		continue;
-	    }
-	    case ';': {
-		for (;;) {
-		    c= getwc(fp);
-		    if (EOF == c) break;
-		    if ('\n' == c || '\r' == c) {
-			ungetwc(c, fp);
-			break;
-		    }
-		}
-		continue;
-	    }
-	    case '"': {
-		static struct buffer buf= BUFFER_INITIALISER;
-		buffer_reset(&buf);
-		for (;;) {
-		    c= getwc(fp);
-		    if ('"' == c) break;
-		    c= readChar(c, fp);
-		    if (EOF == c)			fatal("EOF in string literal");
-		    buffer_append(&buf, c);
-		}
-		oop obj= newString(buffer_contents(&buf));
-		//buffer_free(&buf);
-		return obj;
-	    }
-	    case '?': {
-		return newLong(readChar(getwc(fp), fp));
-	    }
-	    case '\'': {
-		oop obj= readExpr(fp);
-		if (obj == DONE)
-		    obj= s_quote;
-		else {
-		    GC_PROTECT(obj);
-		    obj= newPairFrom(obj, nil, currentSource);
-		    obj= newPairFrom(s_quote, obj, currentSource);
-		    GC_UNPROTECT(obj);
-		}
-		return obj;
-	    }
-	    case '`': {
-		oop obj= readExpr(fp);
-		if (obj == DONE)
-		    obj= s_quasiquote;
-		else {
-		    GC_PROTECT(obj);
-		    obj= newPairFrom(obj, nil, currentSource);
-		    obj= newPairFrom(s_quasiquote, obj, currentSource);
-		    GC_UNPROTECT(obj);
-		}
-		return obj;
-	    }
-	    case ',': {
-		oop sym= s_unquote;
-		c= getwc(fp);
-		if ('@' == c)	sym= s_unquote_splicing;
-		else		ungetwc(c, fp);
-		oop obj= readExpr(fp);
-		if (obj == DONE)
-		    obj= sym;
-		else {
-		    GC_PROTECT(obj);
-		    obj= newPairFrom(obj, nil, currentSource);
-		    obj= newPairFrom(sym, obj, currentSource);
-		    GC_UNPROTECT(obj);
-		}
-		return obj;
-	    }
-        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-	    doDigits:	{
-		static struct buffer buf= BUFFER_INITIALISER;
-		buffer_reset(&buf);
-		do {
-		    buffer_append(&buf, c);
-		    c= getwc(fp);
-		} while (isDigit10(c));
-		if (('.' == c) || ('e' == c)) {
-		    if ('.' == c) {
-			do {
-			    buffer_append(&buf, c);
-			    c= getwc(fp);
-			} while (isDigit10(c));
-		    }
-		    if ('e' == c) {
-			buffer_append(&buf, c);
-			c= getwc(fp);
-			if ('-' == c) {
-			    buffer_append(&buf, c);
-			    c= getwc(fp);
-			}
-			while (isDigit10(c)) {
-			    buffer_append(&buf, c);
-			    c= getwc(fp);
-			}
-		    }
-		    ungetwc(c, fp);
-		    oop obj=  newDouble(wcstod(buffer_contents(&buf), 0));
-		    return obj;
-		}
-		if (('x' == c) && ((1 == buf.position)
-				   || ((2 == buf.position) && (buf.buffer[0] == '-'))
-			))
-		    do {
-			buffer_append(&buf, c);
-			c= getwc(fp);
-		    } while (isDigit16(c));
-		ungetwc(c, fp);
-		oop obj= newLong(wcstoul(buffer_contents(&buf), 0, 0));
-		return obj;
-	    }
-	    case '(': return readList(fp, ')');	  case ')': ungetwc(c, fp);  return DONE;
-	    case '[': {
-		oop obj= readList(fp, ']');			GC_PROTECT(obj);
+	    wint_t c = getwc(fp);
+	    switch (c) {
+	        case WEOF: {
+		        return DONE;
+	        }
+	        case '\n': {
+		        while ('\r' == (c = getwc(fp)));
+		        if (c >= 0) ungetwc(c, fp);
+		        advanceSource();
+		        continue;
+	        }
+	        case '\r': {
+		        while ('\n' == (c = getwc(fp)));
+		        ungetwc(c, fp);
+		        advanceSource();
+		        continue;
+	        }
+	        case '\t': 
+            case ' ': {
+		        continue;
+	        }
+	        case ';': {
+		        for (;;) {
+		            c = getwc(fp);
+		            if (EOF == c) break;
+		            if ('\n' == c || '\r' == c) {
+			            ungetwc(c, fp);
+			            break;
+		            }
+		        }
+		        continue;
+	        }
+	        case '"': {
+		        static struct buffer buf = BUFFER_INITIALISER;
+		        buffer_reset(&buf);
+		        for (;;) {
+		            c = getwc(fp);
+		            if ('"' == c) break;
+		            c= readChar(c, fp);
+		            if (EOF == c) fatal("EOF in string literal");
+		            buffer_append(&buf, c);
+		        }
+		        oop obj = newString(buffer_contents(&buf));
+		        //buffer_free(&buf);
+		        return obj;
+	        }
+	        case '?': {
+		        return newLong(readChar(getwc(fp), fp));
+	        }
+	        case '\'': {
+		        oop obj = readExpr(fp);
+		        if (obj == DONE) obj = s_quote;
+		        else {
+		            GC_PROTECT(obj);
+		            obj = newPairFrom(obj, nil, currentSource);
+		            obj = newPairFrom(s_quote, obj, currentSource);
+		            GC_UNPROTECT(obj);
+		        }
+		        return obj;
+	        }
+	        case '`': {
+		        oop obj = readExpr(fp);
+		        if (obj == DONE) obj= s_quasiquote;
+		        else {
+		            GC_PROTECT(obj);
+		            obj = newPairFrom(obj, nil, currentSource);
+		            obj = newPairFrom(s_quasiquote, obj, currentSource);
+		            GC_UNPROTECT(obj);
+		        }
+		        return obj;
+	        }
+	        case ',': {
+		        oop sym = s_unquote;
+		        c = getwc(fp);
+		        if ('@' == c) sym = s_unquote_splicing;
+		        else ungetwc(c, fp);
+		        oop obj = readExpr(fp);
+		        if (obj == DONE) obj = sym;
+		        else {
+		            GC_PROTECT(obj);
+		            obj = newPairFrom(obj, nil, currentSource);
+		            obj = newPairFrom(sym, obj, currentSource);
+		            GC_UNPROTECT(obj);
+		        }
+		        return obj;
+	        }
+            case '0': case '1': case '2': case '3': case '4': 
+            case '5': case '6': case '7': case '8': case '9':
+	            doDigits: {
+		            static struct buffer buf= BUFFER_INITIALISER;
+		            buffer_reset(&buf);
+		            do {
+		                buffer_append(&buf, c);
+		                c = getwc(fp);
+		            } while (isDigit10(c));
+		            if (('.' == c) || ('e' == c)) {
+		                if ('.' == c) {
+			                do {
+			                    buffer_append(&buf, c);
+			                    c = getwc(fp);
+			                } while (isDigit10(c));
+		                }
+		                if ('e' == c) {
+			                buffer_append(&buf, c);
+			                c = getwc(fp);
+			                if ('-' == c) {
+			                    buffer_append(&buf, c);
+			                    c = getwc(fp);
+			                }
+			                while (isDigit10(c)) {
+			                    buffer_append(&buf, c);
+			                    c = getwc(fp);
+			                }
+		                }
+		                ungetwc(c, fp);
+		                oop obj = newDouble(wcstod(buffer_contents(&buf), 0));
+		                return obj;
+		            }
+		            if (('x' == c) && ((1 == buf.position) || ((2 == buf.position) && (buf.buffer[0] == '-'))))
+		                do {
+			                buffer_append(&buf, c);
+			                c = getwc(fp);
+		                } while (isDigit16(c));
+		            ungetwc(c, fp);
+		            oop obj = newLong(wcstoul(buffer_contents(&buf), 0, 0));
+		            return obj;
+	            }
+	        case '(': return readList(fp, ')');	  
+            case ')': ungetwc(c, fp); return DONE;
+	        case '[': {
+		    oop obj= readList(fp, ']');			GC_PROTECT(obj);
 		obj= newPairFrom(s_bracket, obj, obj);	GC_UNPROTECT(obj);
 		return obj;
 	    }
@@ -1022,40 +1095,6 @@ static void doprint(FILE *stream, oop obj, int storing)
 		fprintf(stream, "Subr<%p>", get(obj, Subr,imp));
 	    break;
 	}
-//	   case Variable: {
-//	       if (!isGlobal(obj) && isatty(1)) fprintf(stream, "[4m");
-//	       doprint(stream, get(obj, Variable,name), 0);
-//	       if (!isGlobal(obj) && isatty(1)) fprintf(stream, "[m");
-// #if !defined(NDEBUG)
-//	       oop env= get(obj, Variable,env);
-//	       if (nil != env) fprintf(stream, ";%ld+%ld", getLong(get(env, Env,level)), getLong(get(obj, Variable,index)));
-// #endif
-//	       break;
-//	   }
-//	   case Env: {
-//	       oop level= get(obj, Env,level);
-//	       oop offset= get(obj, Env,offset);
-//	       fprintf(stream, "Env%s%s<%ld+%ld:", ((nil == get(obj, Env,parent)) ? "*" : ""), ((nil == get(obj, Env,stable)) ? "=" : ""),
-//		       is(Long, level) ? getLong(level) : -1, is(Long, offset) ? getLong(offset) : -1);
-// #if 0
-//	       oop bnd= get(obj, Env,bindings);
-//	       int idx= arrayLength(bnd);
-//	       while (--idx >= 0) {
-//		   doprint(stream, arrayAt(bnd, idx), storing);
-//		   if (idx) fprintf(stream, " ");
-//	       }
-// #endif
-//	       fprintf(stream, ">");
-//	       break;
-//	   }
-//	   case Context: {
-//	       fprintf(stream, "Context<");
-//	       doprint(stream, get(obj, Context,env), storing);
-//	       fprintf(stream, "=");
-//	       doprint(stream, get(obj, Context,bindings), storing);
-//	       fprintf(stream, ">");
-//	       break;
-//	   }
 	default: {
 	    oop name= lookup(getVar(globals), intern(L"%type-names"));
 	    if (is(Array, name)) {
