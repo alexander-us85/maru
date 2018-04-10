@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <wchar.h>
 
-#if defined(WIN32)
+#if defined(_MSC_VER)
     #ifndef __W32DLFCN_H
     #define __W32DLFCN_H
 
@@ -30,6 +30,8 @@
 #ifndef RTLD_DEFAULT
 # define RTLD_DEFAULT 0
 #endif
+
+#define RTLD_NOW 0x00002
 
 #define STR(X)		#X
 

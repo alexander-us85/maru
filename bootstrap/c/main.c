@@ -2782,17 +2782,17 @@ static inline unsigned long checkRange(oop obj, unsigned long offset, unsigned l
 	return val;													\
     }
 
-accessor(byte,		Long,	 unsigned char)
+accessor(byte, Long, unsigned char)
 // accessor(char,		Long,	 char)
 // accessor(short,		Long,	 short)
 // accessor(wchar,		Long,	 wchar_t)
 // accessor(int,		Long,	 int)
-accessor(int32,		Long,	 int32_t)
+accessor(int32, Long, int32_t)
 // accessor(int64,		Long,	 int64_t)
 // accessor(long,		Long,	 long)
 // accessor(longlong,	Long,	 long long)
 // accessor(pointer,	Long,	 long)
-accessor(float,		Double,	 float)
+accessor(float, Double, float)
 // accessor(double,	Double,	 double)
 // accessor(longdouble,	Double,	 long double)
 
@@ -2855,6 +2855,20 @@ accessor(float,		Double,	 float)
 # include <dlfcn.h>
 # undef __USE_GNU
 #endif
+
+#define DllExport __declspec(dllexport)
+
+DllExport int* dlopen(char* name) {
+	return LoadLibraryA(name);
+}
+
+DllExport int* dlsym(int* hmodule, char* procName) {
+	return GetProcAddress(hmodule, procName);
+}
+
+DllExport int dlerror() {
+	return GetLastError();
+}
 
 static subr(subr)
 {
