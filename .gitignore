@@ -1,0 +1,15 @@
+build/
+bootstrap/c/build/
+eval
+eval32
+test
+test.c
+
+# TODO eventually these files should go under build/ and the following
+# entries deleted.
+
+osdefs.k
+*.osdefs.k
+
+tpeg.l
+tpeg.ll
