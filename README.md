@@ -1,3 +1,4 @@
+## Originally taken from https://github.com/attila-lendvai/maru
 ## What
 
 This is a small language called Maru, written by Ian Piumarta (http://piumarta.com/software/maru/).
@@ -7,20 +8,11 @@ and an attempt to make it more approachable for the uninitiated.
 
 Maru is a proof of concept of a rather small, yet fully bootstrapped language.
 
-## Why
-
-Ian stopped working on this project and I wanted to keep it alive, and also
-wanted to understand it better myself.
-
-## Who
-
-attila@lendvai.name
-
 ## Status
 
-I have isolated the C bootstrap code, clarified how it is built, and wrote another
-bootstrap interpreter in Common Lisp that is about 90% functional... but I ran out
-of steam when I got stuck at a bug, and stopped working on this project.
+Attila Lendvai have isolated the C bootstrap code, clarified how it is built, and wrote another
+bootstrap interpreter in Common Lisp that is about 90% functional... but he ran out
+of steam when he got stuck at a bug, and stopped working on this project.
 
 Chances are low that I will jump on it again, because the code is more of an
 experiment than something crystallized, and I couldn't get any feedback from
