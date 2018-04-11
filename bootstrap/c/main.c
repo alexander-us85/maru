@@ -543,12 +543,12 @@ static oop findVariable(oop env, oop name)
 
 static oop findNamespaceVariable(oop env, oop name)
 {
-    oop beg= findEnvironment(env);
-    oop end= findEnvironment(cdr(env));
+    oop beg = findEnvironment(env);
+    oop end = findEnvironment(cdr(env));
     while (beg != end) {
 	if (beg == globalNamespace) {
-	    long hash= ((long)name) % GLOBAL_CACHE_SIZE;
-	    oop ent= ((oop *)_globalCache)[hash];
+	    long hash = ((long)name) % GLOBAL_CACHE_SIZE;
+	    oop ent = ((oop *)_globalCache)[hash];
 	    if ((nil != ent) && (name == getHead(ent))) return ent;
 	    return ((oop *)_globalCache)[hash]= findVariable2(env, name);
 	}
@@ -902,211 +902,190 @@ static oop readExpr(FILE *fp)
 	        case '(': return readList(fp, ')');	  
             case ')': ungetwc(c, fp); return DONE;
 	        case '[': {
-		    oop obj= readList(fp, ']');			GC_PROTECT(obj);
-		obj= newPairFrom(s_bracket, obj, obj);	GC_UNPROTECT(obj);
-		return obj;
+		        oop obj= readList(fp, ']');			    GC_PROTECT(obj);
+		        obj = newPairFrom(s_bracket, obj, obj);	GC_UNPROTECT(obj);
+		        return obj;
+	        }
+	        case ']': ungetwc(c, fp); return DONE;
+	        case '{': {
+		        oop obj = readList(fp, '}');			GC_PROTECT(obj);
+		        obj = newPairFrom(s_brace, obj, obj);	GC_UNPROTECT(obj);
+		        return obj;
+	        }
+	        case '}': ungetwc(c, fp); return DONE;
+	        case '-': {
+		        wint_t d= getwc(fp);
+		        ungetwc(d, fp);
+		        if (isDigit10(d)) goto doDigits;
+		        /* fall through... */
+	        }
+	        default: {
+		        if (isLetter(c)) {
+		            static struct buffer buf= BUFFER_INITIALISER;
+		            oop obj = nil;						GC_PROTECT(obj);
+		            //oop in = nil;					    GC_PROTECT(in);
+		            buffer_reset(&buf);
+		            while (isLetter(c) || isDigit10(c)) {
+			            buffer_append(&buf, c);
+			            c = getwc(fp);
+		            }
+		            ungetwc(c, fp);
+		            obj = intern(buffer_contents(&buf));
+        		    GC_UNPROTECT(obj);
+		        return obj;
+		        }
+		        fatal(isPrint(c) ? "illegal character: 0x%02x '%c'" : "illegal character: 0x%02x", c, c);
+	        }
 	    }
-	    case ']': ungetwc(c, fp);  return DONE;
-	    case '{': {
-		oop obj= readList(fp, '}');			GC_PROTECT(obj);
-		obj= newPairFrom(s_brace, obj, obj);		GC_UNPROTECT(obj);
-		return obj;
-	    }
-	    case '}': ungetwc(c, fp);  return DONE;
-	    case '-': {
-		wint_t d= getwc(fp);
-		ungetwc(d, fp);
-		if (isDigit10(d)) goto doDigits;
-		/* fall through... */
-	    }
-	    default: {
-		if (isLetter(c)) {
-		    static struct buffer buf= BUFFER_INITIALISER;
-		    oop obj= nil;						GC_PROTECT(obj);
-		    //oop in= nil;					GC_PROTECT(in);
-		    buffer_reset(&buf);
-		    while (isLetter(c) || isDigit10(c)) {
-//	    if (('.' == c) && buf.position) {
-//	      c= getwc(fp);
-//	      if (!isLetter(c) && !isDigit10(c)) {
-//		ungetwc(c, fp);
-//		c= '.';
-//	      }
-//	      else {
-//		obj= intern(buffer_contents(&buf));
-//		in=  newPair(obj, in);
-//		buffer_reset(&buf);
-//	      }
-//	    }
-			buffer_append(&buf, c);
-			c= getwc(fp);
-		    }
-		    ungetwc(c, fp);
-		    obj= intern(buffer_contents(&buf));
-//	  while (nil != in) {
-//	    obj= newPair(obj, nil);
-//	    obj= newPair(getHead(in), obj);
-//	    obj= newPair(s_in, obj);
-//	    in= getTail(in);
-//	  }
-		    //GC_UNPROTECT(in);
-		    GC_UNPROTECT(obj);
-		    return obj;
-		}
-		fatal(isPrint(c) ? "illegal character: 0x%02x '%c'" : "illegal character: 0x%02x", c, c);
-	    }
-	}
     }
 }
 
 static void doprint(FILE *stream, oop obj, int storing)
 {
     if (!obj) {
-	fprintf(stream, "()");
-	return;
+	    fprintf(stream, "()");
+	    return;
     }
     if (obj == globals) {
-	fprintf(stream, "<the global environment>");
-	return;
+	    fprintf(stream, "<the global environment>");
+	    return;
     }
 #if !defined(NDEBUG)
     if (ptr2hdr(obj)->printing) {
-	fprintf(stream, "<loop>%i %i", getType(obj), ptr2hdr(obj)->printing);
-	return;
+	    fprintf(stream, "<loop>%i %i", getType(obj), ptr2hdr(obj)->printing);
+	    return;
     }
     ptr2hdr(obj)->printing += 1;
 #endif
     switch (getType(obj)) {
-	case Undefined:	fprintf(stream, "UNDEFINED");		break;
-	case Data: {
-	    //int i, j= GC_size(obj);
-	    fprintf(stream, "<data[%i]", (int)GC_size(obj));
-	    //for (i= 0;  i < j;  ++i) fprintf(stream, " %02x", ((unsigned char *)obj)[i]);
-	    fprintf(stream, ">");
-	    break;
-	}
-	case Long:	fprintf(stream, "%"LD, getLong(obj));	break;
-	case Double:	fprintf(stream, "%lf", getDouble(obj));	break;
-	case String: {
-	    if (!storing)
-		fprintf(stream, "%ls", get(obj, String,bits));
-	    else {
-		wchar_t *p= get(obj, String,bits);
-		int c;
-		putc('"', stream);
-		while ((c= *p++)) {
-		    if (c >= ' ')
-			switch (c) {
-			    case '"':  printf("\\\"");	break;
-			    case '\\': printf("\\\\");	break;
-			    default:	 putwc(c, stream);  break;
-			}
-		    else fprintf(stream, "\\%03o", c);
-		}
-		putc('"', stream);
+	    case Undefined:	fprintf(stream, "UNDEFINED"); break;
+	    case Data: {	    
+	        fprintf(stream, "<data[%i]", (int)GC_size(obj));
+	        fprintf(stream, ">");
+	        break;
 	    }
-	    break;
-	}
-	case Symbol:	fprintf(stream, "%ls", get(obj, Symbol,bits));	break;
-	case Pair: {
-	    oop head= obj;
-#if 0
-	    if (nil != get(head, Pair,source)) {
-		oop source= get(head, Pair,source);
-		oop path= car(source);
-		oop line= cdr(source);
-		fprintf(stream, "<%ls:%ld>", get(path, String,bits), getLong(line));
+	    case Long:	 fprintf(stream, "%"LD, getLong(obj));	 break;
+	    case Double: fprintf(stream, "%lf", getDouble(obj)); break;
+	    case String: {
+	        if (!storing)
+		        fprintf(stream, "%ls", get(obj, String,bits));
+	        else {
+		        wchar_t *p = get(obj, String,bits);
+		        int c;
+		        putc('"', stream);
+		        while ((c = *p++)) {
+		            if (c >= ' ')
+			        switch (c) {
+			            case '"':    printf("\\\"");	break;
+			            case '\\':   printf("\\\\");	break;
+			            default:	 putwc(c, stream);  break;
+			        }
+		            else fprintf(stream, "\\%03o", c);
+		        }
+		        putc('"', stream);
+	        }
+	        break;
 	    }
-#endif
-	    fprintf(stream, "(");
-	    for (;;) {
-		assert(is(Pair, head));
-		if (head == getVar(globals)) {
-		    fprintf(stream, "<...all the globals...>");
-		    head= nil;
-		}
-		else if (head == globals) {
-		    fprintf(stream, "<the global association>");
-		    head= nil;
-		}
-		else if (is(Pair, getHead(head))
-			 && is(Symbol, getHead(getHead(head)))
-			 && head == getTail(getHead(head))) {
-		    fprintf(stream, "<%ls>", get(getHead(getHead(head)), Symbol,bits));
-		}
-		else
-		    doprint(stream, getHead(head), storing);
-		head= cdr(head);
-		if (!is(Pair, head)) break;
-		fprintf(stream, " ");
+	    case Symbol: fprintf(stream, "%ls", get(obj, Symbol,bits));	break;
+	    case Pair: {
+	        oop head= obj;
+        #if 0
+	        if (nil != get(head, Pair,source)) {
+		    oop source= get(head, Pair,source);
+		    oop path= car(source);
+		    oop line= cdr(source);
+		    fprintf(stream, "<%ls:%ld>", get(path, String,bits), getLong(line));
+	        }
+        #endif
+	        fprintf(stream, "(");
+	        for (;;) {
+		        assert(is(Pair, head));
+		        if (head == getVar(globals)) {
+		            fprintf(stream, "<...all the globals...>");
+		            head = nil;
+		        }
+		        else if (head == globals) {
+		            fprintf(stream, "<the global association>");
+		            head = nil;
+		        }
+		        else if (is(Pair, getHead(head))
+			         && is(Symbol, getHead(getHead(head)))
+			         && head == getTail(getHead(head))) {
+		            fprintf(stream, "<%ls>", get(getHead(getHead(head)), Symbol,bits));
+		        }
+		        else
+		            doprint(stream, getHead(head), storing);
+		        head = cdr(head);
+		        if (!is(Pair, head)) break;
+		        fprintf(stream, " ");
+	        }
+	        if (nil != head) {
+		        fprintf(stream, " . ");
+		        doprint(stream, head, storing);
+	        }
+	        fprintf(stream, ")");
+	        break;
 	    }
-	    if (nil != head) {
-		fprintf(stream, " . ");
-		doprint(stream, head, storing);
+	    case Array: {
+	        int i, len= arrayLength(obj);
+	        fprintf(stream, "Array<%d>(", arrayLength(obj));
+	        for (i = 0;	i < len;  ++i) {
+		        if (i) fprintf(stream, " ");
+		        doprint(stream, arrayAt(obj, i), storing);
+	        }
+	        fprintf(stream, ")");
+	        break;
 	    }
-	    fprintf(stream, ")");
-	    break;
-	}
-	case Array: {
-	    int i, len= arrayLength(obj);
-	    fprintf(stream, "Array<%d>(", arrayLength(obj));
-	    for (i= 0;	i < len;  ++i) {
-		if (i) fprintf(stream, " ");
-		doprint(stream, arrayAt(obj, i), storing);
+	    case Expr: {
+	        fprintf(stream, "Expr");
+	        if (nil != (get(obj, Expr,name))) {
+		        fprintf(stream, ".");
+		        doprint(stream, get(obj, Expr,name), storing);
+	        }
+	        fprintf(stream, "=");
+	        doprint(stream, car(get(obj, Expr,definition)), storing);
+	        break;
 	    }
-	    fprintf(stream, ")");
-	    break;
-	}
-	case Expr: {
-	    fprintf(stream, "Expr");
-	    if (nil != (get(obj, Expr,name))) {
-		fprintf(stream, ".");
-		doprint(stream, get(obj, Expr,name), storing);
+	    case Form: {
+	        fprintf(stream, "Form(");
+	        doprint(stream, get(obj, Form,function), storing);
+	        fprintf(stream, ", ");
+	        doprint(stream, get(obj, Form,symbol), storing);
+	        fprintf(stream, ")");
+	        break;
 	    }
-	    fprintf(stream, "=");
-	    doprint(stream, car(get(obj, Expr,definition)), storing);
-	    break;
-	}
-	case Form: {
-	    fprintf(stream, "Form(");
-	    doprint(stream, get(obj, Form,function), storing);
-	    fprintf(stream, ", ");
-	    doprint(stream, get(obj, Form,symbol), storing);
-	    fprintf(stream, ")");
-	    break;
-	}
-	case Fixed: {
-	    if (isatty(1)) {
-		fprintf(stream, "[1m");
-		doprint(stream, get(obj, Fixed,function), storing);
-		fprintf(stream, "[m");
+	    case Fixed: {
+	        if (isatty(1)) {
+		        fprintf(stream, "[1m");
+		        doprint(stream, get(obj, Fixed,function), storing);
+		        fprintf(stream, "[m");
+	        }
+	        else {
+		        fprintf(stream, "Fixed<");
+		        doprint(stream, get(obj, Fixed,function), storing);
+		        fprintf(stream, ">");
+	        }
+	        break;
 	    }
-	    else {
-		fprintf(stream, "Fixed<");
-		doprint(stream, get(obj, Fixed,function), storing);
-		fprintf(stream, ">");
+	    case Subr: {
+	        if (get(obj, Subr,name))
+		        fprintf(stream, "%ls", get(obj, Subr,name));
+	        else
+		        fprintf(stream, "Subr<%p>", get(obj, Subr,imp));
+	        break;
 	    }
-	    break;
-	}
-	case Subr: {
-	    if (get(obj, Subr,name))
-		fprintf(stream, "%ls", get(obj, Subr,name));
-	    else
-		fprintf(stream, "Subr<%p>", get(obj, Subr,imp));
-	    break;
-	}
-	default: {
-	    oop name= lookup(getVar(globals), intern(L"%type-names"));
-	    if (is(Array, name)) {
-		name= arrayAt(name, getType(obj));
-		if (is(Symbol, name)) {
-		    fprintf(stream, "[34m%ls[m", get(name, Symbol,bits));
-		    break;
-		}
+	    default: {
+	        oop name = lookup(getVar(globals), intern(L"%type-names"));
+	        if (is(Array, name)) {
+		        name= arrayAt(name, getType(obj));
+		        if (is(Symbol, name)) {
+		            fprintf(stream, "[34m%ls[m", get(name, Symbol,bits));
+		            break;
+		        }
+	        }
+	        fprintf(stream, "<type=%i>", getType(obj));
+	        break;
 	    }
-	    fprintf(stream, "<type=%i>", getType(obj));
-	    break;
-	}
     }
 #if !defined(NDEBUG)
     ptr2hdr(obj)->printing= 0;
@@ -1114,10 +1093,10 @@ static void doprint(FILE *stream, oop obj, int storing)
 }
 
 static void fprint(FILE *stream, oop obj)	{ doprint(stream, obj, 0);  fflush(stream); }
-static void print(oop obj)			{ fprint(stdout, obj); }
+static void print(oop obj)			        { fprint(stdout, obj); }
 
 static void fdump(FILE *stream, oop obj)	{ doprint(stream, obj, 1);  fflush(stream); }
-static void dump(oop obj)			{ fdump(stdout, obj); }
+static void dump(oop obj)			        { fdump(stdout, obj); }
 
 static void fdumpln(FILE *stream, oop obj)
 {
@@ -1126,15 +1105,15 @@ static void fdumpln(FILE *stream, oop obj)
     fflush(stream);
 }
 
-static void dumpln(oop obj)			{ fdumpln(stdout, obj); }
+static void dumpln(oop obj)	{ fdumpln(stdout, obj); }
 
 static oop apply(oop fun, oop args, oop ctx);
 
 static oop concat(oop head, oop tail)
 {
     if (!is(Pair, head)) return tail;
-    tail= concat(getTail(head), tail);			GC_PROTECT(tail);
-    head= newPairFrom(getHead(head), tail, head);	GC_UNPROTECT(tail);
+    tail= concat(getTail(head), tail);			  GC_PROTECT(tail);
+    head= newPairFrom(getHead(head), tail, head); GC_UNPROTECT(tail);
     return head;
 }
 
@@ -1149,13 +1128,13 @@ static void setSource(oop obj, oop src)
 static oop getSource(oop exp)
 {
     if (is(Pair, exp)) {
-	oop src= get(exp, Pair,source);
-	if (nil != src) {
-	    oop path= car(src);
-	    oop line= cdr(src);
-	    if (is(String, path) && is(Long, line))
-		return src;
-	}
+	    oop src= get(exp, Pair,source);
+	    if (nil != src) {
+	        oop path = car(src);
+	        oop line = cdr(src);
+	        if (is(String, path) && is(Long, line))
+		    return src;
+	    }
     }
     return nil;
 }
@@ -1163,7 +1142,7 @@ static oop getSource(oop exp)
 static int fprintSource(FILE *stream, oop src)
 {
     if (nil != src) {
-	return fprintf(stream, "%ls:%"LD, get(car(src), String,bits), getLong(cdr(src)));
+	    return fprintf(stream, "%ls:%"LD, get(car(src), String,bits), getLong(cdr(src)));
     }
     return 0;
 }
@@ -1176,9 +1155,11 @@ static int printSource(oop exp)
 static oop exlist(oop obj, oop env);
 
 static oop findFormFunction(oop env, oop var)
-{						if (!is(Symbol, var))	return nil;
-    var= findVariable(env, var);		if (nil == var)		return nil;
-    var= getVar(var);				if (!is(Form, var))	return nil;
+{	if (!is(Symbol, var)) return nil;
+    var = findVariable(env, var);		
+    if (nil == var)	return nil;
+    var = getVar(var);				
+    if (!is(Form, var))	return nil;
     return get(var, Form,function);
 }
 
@@ -1193,47 +1174,39 @@ static oop expand(oop expr, oop env)
 {
     if (opt_v > 1) { printf("EXPAND ");  dumpln(expr); }
     if (is(Pair, expr)) {
-	oop head= expand(getHead(expr), env);				GC_PROTECT(head);
-	oop form= findFormFunction(env, head);
-	if (nil != form) {
-	    head= apply(form, getTail(expr), env);
-	    head= expand(head, env);					GC_UNPROTECT(head);
-	    if (opt_v > 1) { printf("EXPAND => ");	dumpln(head); }
-	    setSource(head, get(expr, Pair,source));
-	    return head;
-	}
-	oop tail= getTail(expr);					GC_PROTECT(tail);
-	if (s_quote != head) tail= exlist(tail, env);
-	if (s_set == head && is(Pair, car(tail)) && is(Symbol, caar(tail)) /*&& s_in != caar(tail)*/) {
-	    static struct buffer buf= BUFFER_INITIALISER;
-	    buffer_reset(&buf);
-	    buffer_appendAll(&buf, L"set-");
-	    buffer_appendAll(&buf, get(getHead(getHead(tail)), Symbol,bits));
-	    head= intern(buffer_contents(&buf));
-	    tail= concat(getTail(getHead(tail)), getTail(tail));
-	}
-	expr= newPairFrom(head, tail, expr);				GC_UNPROTECT(tail);  GC_UNPROTECT(head);
+	    oop head= expand(getHead(expr), env); GC_PROTECT(head);
+	    oop form= findFormFunction(env, head);
+	    if (nil != form) {
+	        head= apply(form, getTail(expr), env);
+	        head= expand(head, env); GC_UNPROTECT(head);
+	        if (opt_v > 1) { printf("EXPAND => ");	dumpln(head); }
+	        setSource(head, get(expr, Pair,source));
+	        return head;
+	    }
+	    oop tail= getTail(expr); GC_PROTECT(tail);
+	    if (s_quote != head) tail = exlist(tail, env);
+	    if (s_set == head && is(Pair, car(tail)) && is(Symbol, caar(tail))) {
+	        static struct buffer buf = BUFFER_INITIALISER;
+	        buffer_reset(&buf);
+	        buffer_appendAll(&buf, L"set-");
+	        buffer_appendAll(&buf, get(getHead(getHead(tail)), Symbol,bits));
+	        head = intern(buffer_contents(&buf));
+	        tail = concat(getTail(getHead(tail)), getTail(tail));
+	    }
+	    expr = newPairFrom(head, tail, expr);				
+        GC_UNPROTECT(tail);  
+        GC_UNPROTECT(head);
+    } else if (is(Symbol, expr)) {
+	    oop form = findFormSymbol(env, expr);
+	    if (form) {
+	        oop args = cons(expr, nil);		GC_PROTECT(args);
+	        args = apply(form, args, nil);
+	        args = expand(args, env);		GC_UNPROTECT(args);
+	        setSource(args, expr);
+	        if (opt_v > 1) { printf("EXPAND => ");	dumpln(args); }
+	        return args;
+	    }
     }
-    else if (is(Symbol, expr)) {
-	oop form= findFormSymbol(env, expr);
-	if (form) {
-	    oop args= cons(expr, nil);					GC_PROTECT(args);
-	    args= apply(form, args, nil);
-	    args= expand(args, env);					GC_UNPROTECT(args);
-	    setSource(args, expr);
-	    if (opt_v > 1) { printf("EXPAND => ");	dumpln(args); }
-	    return args;
-	}
-    }
-//     else {
-// 	oop fn= arrayAt(get(expanders, Variable,value), getType(expr));
-// 	if (nil != fn) {
-// 	    oop args= newPair(expr, nil);				GC_PROTECT(args);
-// 	    args= apply(fn, args, nil);					GC_UNPROTECT(args);
-// 	    setSource(args, expr);
-// 	    return args;
-// 	}
-//     }
     if (opt_v > 1) { printf("EXPAND => ");  dumpln(expr); }
     return expr;
 }
@@ -1241,9 +1214,9 @@ static oop expand(oop expr, oop env)
 static oop exlist(oop list, oop env)
 {
     if (!is(Pair, list)) return expand(list, env);
-    oop head= expand(getHead(list), env);			GC_PROTECT(head);
-    oop tail= exlist(getTail(list), env);			GC_PROTECT(tail);
-    head= newPairFrom(head, tail, list);			GC_UNPROTECT(tail);  GC_UNPROTECT(head);
+    oop head = expand(getHead(list), env);	GC_PROTECT(head);
+    oop tail = exlist(getTail(list), env);	GC_PROTECT(tail);
+    head = newPairFrom(head, tail, list);	GC_UNPROTECT(tail);  GC_UNPROTECT(head);
     return head;
 }
 
@@ -1254,95 +1227,95 @@ static oop enlist(oop obj, oop env);
 static oop encodeFrom(oop from, oop obj, oop env)
 {
     switch (getType(obj)) {
-	case Symbol: {
-	    if (nil == findVariable(env, obj)) {
-		int flags= get(obj, Symbol,flags);
-		if (0 == (1 & flags)) {
-		    set(obj, Symbol,flags, 1 | flags);
-		    oop src= getSource(from);
-		    if (nil != src) {
-			int i= fprintSource(stderr, getSource(from));
-			if (i > encodeIndent) encodeIndent= i;
-			while (i++ <= encodeIndent) putc(' ', stderr);
-		    }
-		    oprintf("warning: possibly undefined: %P\n", obj);
-		}
+	    case Symbol: {
+	        if (nil == findVariable(env, obj)) {
+		    int flags = get(obj, Symbol,flags);
+		        if (0 == (1 & flags)) {
+		            set(obj, Symbol,flags, 1 | flags);
+		            oop src = getSource(from);
+		            if (nil != src) {
+			        int i = fprintSource(stderr, getSource(from));
+			        if (i > encodeIndent) encodeIndent = i;
+			        while (i++ <= encodeIndent) putc(' ', stderr);
+		            }
+		            oprintf("warning: possibly undefined: %P\n", obj);
+		        }
+	        }
+	        break;
 	    }
-	    break;
-	}
-	case Pair: {
-	    oop head= getHead(obj);
-	    if (head == s_quote) {
+	    case Pair: {
+	        oop head= getHead(obj);
+	        if (head == s_quote) {}
+	        else if (head == s_define) {			
+                GC_PROTECT(env);
+		        env = cons(nil, env);
+		        setHead(env, cons(cadr(obj), nil));
+		        enlist(cddr(obj), env);				
+                GC_UNPROTECT(env);
+	        } else if (head == s_lambda) {			
+                GC_PROTECT(env);
+		        oop bindings = cadr(obj);
+		        while (isPair(bindings)) {
+		            oop id = bindings;
+		            while (isPair(id)) id = car(id);
+		            env = cons(nil, env);
+		            setHead(env, cons(id, nil));
+		            bindings = getTail(bindings);
+		        }
+		        if (is(Symbol, bindings)) {
+		            env = cons(nil, env);
+		            setHead(env, cons(bindings, nil));
+		        }
+		        enlist(cddr(obj), env);
+                GC_UNPROTECT(env);
+	        } else if (head == s_let) {				
+                GC_PROTECT(env);
+		        oop bindings = cadr(obj);
+		        while (isPair(bindings)) {
+		            enlist(cdar(bindings), env);
+		            bindings = getTail(bindings);
+		        }
+		        bindings = cadr(obj);
+		        while (isPair(bindings)) {
+		            oop id = bindings;
+		            while (isPair(id)) id= car(id);
+		            env = cons(nil, env);
+		            setHead(env, cons(id, nil));
+		            bindings = getTail(bindings);
+		        }
+		        enlist(cddr(obj), env);				
+                GC_UNPROTECT(env);
+	        } else {
+		        enlist(obj, env);
+		        if (is(Symbol, head)) {
+		            oop val = lookup(getVar(globals), head);
+		            if (is(Expr, val)) {
+			            oop formal = car(get(val, Expr,definition));
+			            oop actual = cdr(obj);
+			            while (isPair(formal) && isPair(actual)) {
+			                if (s_etc == car(formal)) {
+				                formal= actual= nil;
+			                } else {
+				                formal = cdr(formal);
+				                actual = cdr(actual);
+			                }
+			            }
+			            if (is(Symbol, formal)) formal = actual = nil;
+			            if (nil != formal || nil != actual) {
+			                oop src = getSource(obj);
+			                if (nil != src) {
+			    	            int i = fprintSource(stderr, getSource(from));
+			    	            if (i > encodeIndent) encodeIndent = i;
+			    	            while (i++ <= encodeIndent) putc(' ', stderr);
+			                }
+			                oprintf("warning: argument mismatch: %P -> %P\n", obj, car(get(val, Expr,definition)));
+			            }
+			    // CHECK ARG LIST HERE
+		            }
+		        }
+	        }
+	        break;
 	    }
-	    else if (head == s_define) {			GC_PROTECT(env);
-		env= cons(nil, env);
-		setHead(env, cons(cadr(obj), nil));
-		enlist(cddr(obj), env);				GC_UNPROTECT(env);
-	    }
-	    else if (head == s_lambda) {			GC_PROTECT(env);
-		oop bindings= cadr(obj);
-		while (isPair(bindings)) {
-		    oop id= bindings;
-		    while (isPair(id)) id= car(id);
-		    env= cons(nil, env);
-		    setHead(env, cons(id, nil));
-		    bindings= getTail(bindings);
-		}
-		if (is(Symbol, bindings)) {
-		    env= cons(nil, env);
-		    setHead(env, cons(bindings, nil));
-		}
-		enlist(cddr(obj), env);				GC_UNPROTECT(env);
-	    }
-	    else if (head == s_let) {				GC_PROTECT(env);
-		oop bindings= cadr(obj);
-		while (isPair(bindings)) {
-		    enlist(cdar(bindings), env);
-		    bindings= getTail(bindings);
-		}
-		bindings= cadr(obj);
-		while (isPair(bindings)) {
-		    oop id= bindings;
-		    while (isPair(id)) id= car(id);
-		    env= cons(nil, env);
-		    setHead(env, cons(id, nil));
-		    bindings= getTail(bindings);
-		}
-		enlist(cddr(obj), env);				GC_UNPROTECT(env);
-	    }
-	    else {
-		enlist(obj, env);
-		if (is(Symbol, head)) {
-		    oop val= lookup(getVar(globals), head);
-		    if (is(Expr, val)) {
-			oop formal= car(get(val, Expr,definition));
-			oop actual= cdr(obj);
-			while (isPair(formal) && isPair(actual)) {
-			    if (s_etc == car(formal)) {
-				formal= actual= nil;
-			    }
-			    else {
-				formal= cdr(formal);
-				actual= cdr(actual);
-			    }
-			}
-			if (is(Symbol, formal))
-			    formal= actual= nil;
-			if (nil != formal || nil != actual) {
-			    oop src= getSource(obj);
-			    if (nil != src) {
-				int i= fprintSource(stderr, getSource(from));
-				if (i > encodeIndent) encodeIndent= i;
-				while (i++ <= encodeIndent) putc(' ', stderr);
-			    }
-			    oprintf("warning: argument mismatch: %P -> %P\n", obj, car(get(val, Expr,definition)));
-			}
-			// CHECK ARG LIST HERE
-		    }
-		}
-	    }
-	    break;
-	}
     }
     return obj;
 }
@@ -1355,171 +1328,193 @@ static oop encode(oop obj, oop env)
 static oop enlist(oop obj, oop env)
 {
     while (isPair(obj)) {
-	encodeFrom(obj, getHead(obj), env);
-	obj= getTail(obj);
+	    encodeFrom(obj, getHead(obj), env);
+	    obj = getTail(obj);
     }
     return obj;
 }
 
-// static void define_bindings(oop bindings, oop innerEnv)
-// {										GC_PROTECT(bindings);
-//     while (is(Pair, bindings))
-//     {
-//	oop var= getHead(bindings);						GC_PROTECT(var);
-//	if (!is(Symbol, var)) var= car(var);
-//	var= define(innerEnv, var, nil);					GC_UNPROTECT(var);
-//	bindings= getTail(bindings);
-//     }										GC_UNPROTECT(bindings);
-// }
+#if 0
+ static void define_bindings(oop bindings, oop innerEnv)
+ {	
+     GC_PROTECT(bindings);
+     while (is(Pair, bindings))
+     {
+	    oop var = getHead(bindings);			GC_PROTECT(var);
+	    if (!is(Symbol, var)) var = car(var);
+	    var= define(innerEnv, var, nil);		GC_UNPROTECT(var);
+	    bindings = getTail(bindings);
+     }										
+     GC_UNPROTECT(bindings);
+ }
 
-// static oop encode_bindings(oop expr, oop bindings, oop outerEnv, oop innerEnv)
-// {
-//     if (is(Pair, bindings))
-//     {										GC_PROTECT(bindings);
-//	oop binding= getHead(bindings);						GC_PROTECT(binding);
-//	if (is(Symbol, binding)) binding= newPairFrom(binding, nil, expr);
-//	oop var= car(binding);							GC_PROTECT(var);
-//	oop val= cdr(binding);							GC_PROTECT(val);
-//	var= findLocalVariable(innerEnv, var);					assert(nil != var);
-//	val= enlist(val, outerEnv);
-//	binding= newPairFrom(var, val, expr);					GC_UNPROTECT(val);  GC_UNPROTECT(var);
-//	oop rest= encode_bindings(expr, getTail(bindings), outerEnv, innerEnv); GC_PROTECT(rest);
-//	bindings= newPairFrom(binding, rest, expr);				GC_UNPROTECT(rest);  GC_UNPROTECT(binding);  GC_UNPROTECT(bindings);
-//     }
-//     return bindings;
-// }
+ static oop encode_bindings(oop expr, oop bindings, oop outerEnv, oop innerEnv)
+ {
+     if (is(Pair, bindings))
+     {										
+          GC_PROTECT(bindings);
+	      oop binding = getHead(bindings);						
+          GC_PROTECT(binding);
+	      if (is(Symbol, binding)) 
+              binding = newPairFrom(binding, nil, expr);
+	      oop var = car(binding);							
+          GC_PROTECT(var);
+	      oop val = cdr(binding);							
+          GC_PROTECT(val);
+	      var = findLocalVariable(innerEnv, var);					
+          assert(nil != var);
+	      val = enlist(val, outerEnv);
+	      binding  = newPairFrom(var, val, expr);					
+          GC_UNPROTECT(val);  
+          GC_UNPROTECT(var);
+	      oop rest = encode_bindings(expr, getTail(bindings), outerEnv, innerEnv); 
+          GC_PROTECT(rest);
+	      bindings = newPairFrom(binding, rest, expr);				
+          GC_UNPROTECT(rest);  
+          GC_UNPROTECT(binding);  
+          GC_UNPROTECT(bindings);
+     }
+     return bindings;
+ }
 
-// static oop encode_let(oop expr, oop tail, oop env)
-// {
-//     oop args= car(tail);							GC_PROTECT(tail);  GC_PROTECT(env);
-//     oop env2= newEnv(env, 0, getLong(get(env, Env,offset)));			GC_PROTECT(env2);
-//     define_bindings(args, env2);
-//     set(env, Env,offset, newLong(getLong(get(env2, Env,offset))));
-//     oop bindings= encode_bindings(expr, args, env, env2);			GC_PROTECT(bindings);
-//     oop body= cdr(tail);							GC_PROTECT(body);
-//     body= enlist(body, env2);
-//     tail= newPairFrom(bindings, body, expr);					GC_UNPROTECT(body);  GC_UNPROTECT(bindings);
-//     tail= newPairFrom(env2, tail, expr);					GC_UNPROTECT(env2);  GC_UNPROTECT(env);	 GC_UNPROTECT(tail);
-//     return tail;
-// }
+ static oop encode_let(oop expr, oop tail, oop env)
+ {
+     oop args = car(tail);							
+     GC_PROTECT(tail);  
+     GC_PROTECT(env);
+     oop env2 = newEnv(env, 0, getLong(get(env, Env,offset)));			
+     GC_PROTECT(env2);
+     define_bindings(args, env2);
+     set(env, Env,offset, newLong(getLong(get(env2, Env,offset))));
+     oop bindings = encode_bindings(expr, args, env, env2);			
+     GC_PROTECT(bindings);
+     oop body = cdr(tail);							
+     GC_PROTECT(body);
+     body = enlist(body, env2);
+     tail = newPairFrom(bindings, body, expr);					
+     GC_UNPROTECT(body);  
+     GC_UNPROTECT(bindings);
+     tail = newPairFrom(env2, tail, expr);					
+     GC_UNPROTECT(env2);  
+     GC_UNPROTECT(env);	 
+     GC_UNPROTECT(tail);
+     return tail;
+ }
 
-// static oop encode(oop expr, oop env)
-// {
-//   if (opt_O < 2) arrayAtPut(traceStack, traceDepth++, expr);
-//   if (opt_v > 1) { printf("ENCODE ");  dumpln(expr); }
-//   if (is(Pair, expr)) {
-//     oop head= encode(getHead(expr), env);			GC_PROTECT(head);
-//     oop tail= getTail(expr);					GC_PROTECT(tail);
-//     if (f_let == head) { // (let ENV (bindings...) . body)
-//	tail= encode_let(expr, tail, env);
-//     }
-//     else if (f_lambda == head) { // (lambda ENV params . body)
-//	 oop args= car(tail);
-//	 env= newEnv(env, 1, 0);					GC_PROTECT(env);
-//	 while (is(Pair, args)) {
-//	if (!is(Symbol, getHead(args))) {
-//	  fprintf(stderr, "\nerror: non-symbol parameter name: ");
-//	  fdumpln(stderr, getHead(args));
-//	  fatal(0);
-//	}
-//	define(env, getHead(args), nil);
-//	args= getTail(args);
-//	 }
-//	 if (nil != args) {
-//	if (!is(Symbol, args)) {
-//	  fprintf(stderr, "\nerror: non-symbol parameter name: ");
-//	  fdumpln(stderr, args);
-//	  fatal(0);
-//	}
-//	define(env, args, nil);
-//	 }
-//	 tail= enlist(tail, env);
-//	 tail= newPairFrom(env, tail, expr);			GC_UNPROTECT(env);
-//     }
-//     else if (f_define == head) {
-//	 oop var= define(get(globals, Variable,value), car(tail), nil);
-//	 tail= enlist(cdr(tail), env);
-//	 tail= newPairFrom(var, tail, expr);
-//     }
-//     else if (f_set == head) {
-//	 oop var= findVariable(env, car(tail));
-//	 if (nil == var) fatal("set: undefined variable: %ls", get(car(tail), Symbol,bits));
-//	 tail= enlist(cdr(tail), env);
-//	 tail= newPairFrom(var, tail, expr);
-//     }
-//     else if (f_quote != head)
-//	 tail= enlist(tail, env);
-//     expr= newPairFrom(head, tail, expr);			GC_UNPROTECT(tail);  GC_UNPROTECT(head);
-//   }
-//   else if (is(Symbol, expr)) {
-//     oop val= findVariable(env, expr);
-//     if (nil == val) fatal("undefined variable: %ls", get(expr, Symbol,bits));
-//     expr= val;
-//     if (isGlobal(expr)) {
-//	 val= get(expr, Variable,value);
-//	 if (is(Form, val) || is(Fixed, val))
-//	expr= val;
-//     }
-//     else {
-//	 oop venv= get(val, Variable,env);
-//	 if (getLong(get(venv, Env,level)) != getLong(get(env, Env,level)))
-//	set(venv, Env,stable, s_t);
-//     }
-//   }
-//   else {
-//     oop fn= arrayAt(get(encoders, Variable,value), getType(expr));
-//     if (nil != fn) {
-//	 oop args= newPair(env, nil);		GC_PROTECT(args);
-//	 args= newPair(expr, args);
-//	 expr= apply(fn, args, nil);		GC_UNPROTECT(args);
-//     }
-//   }
-//   if (opt_v > 1) { printf("ENCODE => ");  dumpln(expr); }
-//   --traceDepth;
-//   return expr;
-// }
+ static oop encode(oop expr, oop env)
+ {
+     if (opt_O < 2) arrayAtPut(traceStack, traceDepth++, expr);
+     if (opt_v > 1) { 
+         printf("ENCODE ");  
+         dumpln(expr); 
+     }
+     if (is(Pair, expr)) {
+         oop head = encode(getHead(expr), env);		GC_PROTECT(head);
+         oop tail = getTail(expr);					GC_PROTECT(tail);
+         if (f_let == head) {
+	         tail= encode_let(expr, tail, env);
+         } else if (f_lambda == head) {
+	         oop args = car(tail);
+	         env = newEnv(env, 1, 0);				GC_PROTECT(env);
+	         while (is(Pair, args)) {
+	             if (!is(Symbol, getHead(args))) {
+	                 fprintf(stderr, "\nerror: non-symbol parameter name: ");
+	                 fdumpln(stderr, getHead(args));
+	                 fatal(0);
+	             }
+	             define(env, getHead(args), nil);
+	             args= getTail(args);
+	         }
+	         if (nil != args) {
+	             if (!is(Symbol, args)) {
+	                 fprintf(stderr, "\nerror: non-symbol parameter name: ");
+	                 fdumpln(stderr, args);
+	                 fatal(0);
+	             }
+	             define(env, args, nil);
+	         }
+	         tail = enlist(tail, env);
+	         tail = newPairFrom(env, tail, expr);	GC_UNPROTECT(env);
+        } else if (f_define == head) {
+	        oop var= define(get(globals, Variable,value), car(tail), nil);
+	        tail = enlist(cdr(tail), env);
+	        tail = newPairFrom(var, tail, expr);
+        } else if (f_set == head) {
+	        oop var= findVariable(env, car(tail));
+	        if (nil == var) fatal("set: undefined variable: %ls", get(car(tail), Symbol,bits));
+	        tail = enlist(cdr(tail), env);
+	        tail = newPairFrom(var, tail, expr);
+        } else if (f_quote != head)
+	        tail = enlist(tail, env);
+        expr= newPairFrom(head, tail, expr);		GC_UNPROTECT(tail);  
+        GC_UNPROTECT(head);
+    } else if (is(Symbol, expr)) {
+        oop val = findVariable(env, expr);
+        if (nil == val) fatal("undefined variable: %ls", get(expr, Symbol,bits));
+        expr = val;
+        if (isGlobal(expr)) {
+	        val= get(expr, Variable,value);
+	        if (is(Form, val) || is(Fixed, val))
+	            expr= val;
+        } else {
+	        oop venv = get(val, Variable,env);
+	        if (getLong(get(venv, Env,level)) != getLong(get(env, Env,level)))
+	        set(venv, Env,stable, s_t);
+        }
+   } else {
+        oop fn = arrayAt(get(encoders, Variable,value), getType(expr));
+        if (nil != fn) {
+	        oop args = newPair(env, nil);		GC_PROTECT(args);
+	        args = newPair(expr, args);
+	        expr = apply(fn, args, nil);		GC_UNPROTECT(args);
+        }
+   }
+   if (opt_v > 1) { printf("ENCODE => ");  dumpln(expr); }
+   --traceDepth;
+   return expr;
+}  
 
-// static oop enlist(oop list, oop env)
-// {
-//   if (!is(Pair, list)) return encode(list, env);
-//   oop head= encode(getHead(list), env);			GC_PROTECT(head);
-//   oop tail= enlist(getTail(list), env);			GC_PROTECT(tail);
-//   head= newPairFrom(head, tail, list);			GC_UNPROTECT(tail);  GC_UNPROTECT(head);
-//   return head;
-// }
+static oop enlist(oop list, oop env)
+{
+    if (!is(Pair, list)) return encode(list, env);
+    oop head = encode(getHead(list), env);			GC_PROTECT(head);
+    oop tail = enlist(getTail(list), env);			GC_PROTECT(tail);
+    head = newPairFrom(head, tail, list);			GC_UNPROTECT(tail);  
+    GC_UNPROTECT(head);
+    return head;
+}
+#endif
 
 static void vfoprintf(FILE *out, char *fmt, va_list ap)
 {
     int c;
-    while ((c= *fmt++)) {
-	if ('%' == c) {
-	    char fbuf[32];
-	    int  index= 0;
-	    fbuf[index++]= '%';
-	    while (index < sizeof(fbuf) - 1) {
-		c= *fmt++;
-		fbuf[index++]= c;
-		if (strchr("PdiouxXDOUeEfFgGaACcSspn%", c)) break;
-	    }
-	    fbuf[index]= 0;
-	    switch (c) {	// cannot call vfprintf(out, fbuf, ap) because ap can be passed by copy
-		case 'e': case 'E': case 'f': case 'F':
-		case 'g': case 'G': case 'a': case 'A':	{ double arg= va_arg(ap, double);	fprintf(out, fbuf, arg); break; }
-		case 'd': case 'i': case 'o': case 'u':
-		case 'x': case 'X': case 'c':		{ int    arg= va_arg(ap, int);		fprintf(out, fbuf, arg); break; }
-		case 'D': case 'O': case 'U':		{ long   arg= va_arg(ap, long int);	fprintf(out, fbuf, arg); break; }
-		case 'C':				{ wint_t arg= va_arg(ap, wint_t);	fprintf(out, fbuf, arg); break; }
-		case 's': case 'S': case 'p':		{ void  *arg= va_arg(ap, void *);	fprintf(out, fbuf, arg); break; }
-		case 'P':				{ oop    arg= va_arg(ap, oop);		fdump  (out,       arg); break; }
-		case '%':				{					putc('%', out);		 break; }
-		default:
-		    fprintf(stderr, "\nimplementation error: cannot convert format '%c'\n", c);
-		    exit(1);
-		    break;
-	    }
-	}
-	else
-	    fputc(c, out);
+    while ((c = *fmt++)) {
+	    if ('%' == c) {
+	        char fbuf[32];
+	        int  index = 0;
+	        fbuf[index++] = '%';
+	        while (index < sizeof(fbuf) - 1) {
+		        c = *fmt++;
+		        fbuf[index++] = c;
+		        if (strchr("PdiouxXDOUeEfFgGaACcSspn%", c)) break;
+	        }
+	        fbuf[index] = 0;
+	        switch (c) {	// cannot call vfprintf(out, fbuf, ap) because ap can be passed by copy
+		        case 'e': case 'E': case 'f': case 'F':
+		        case 'g': case 'G': case 'a': case 'A':	{ double arg= va_arg(ap, double);	fprintf(out, fbuf, arg); break; }
+		        case 'd': case 'i': case 'o': case 'u':
+		        case 'x': case 'X': case 'c':		    { int    arg= va_arg(ap, int);		fprintf(out, fbuf, arg); break; }
+		        case 'D': case 'O': case 'U':		    { long   arg= va_arg(ap, long int);	fprintf(out, fbuf, arg); break; }
+		        case 'C':				                { wint_t arg= va_arg(ap, wint_t);	fprintf(out, fbuf, arg); break; }
+		        case 's': case 'S': case 'p':		    { void  *arg= va_arg(ap, void *);	fprintf(out, fbuf, arg); break; }
+		        case 'P':				                { oop    arg= va_arg(ap, oop);		fdump  (out,       arg); break; }
+		        case '%':				                {					                putc('%', out);		     break; }
+		        default:
+		            fprintf(stderr, "\nimplementation error: cannot convert format '%c'\n", c);
+		            exit(1);
+		            break;
+	        }
+	    } else fputc(c, out);
     }
 }
 
@@ -1534,42 +1529,40 @@ static void oprintf(char *fmt, ...)
 static void fatal(char *reason, ...)
 {
     if (reason) {
-	va_list ap;
-	va_start(ap, reason);
-	fprintf(stderr, "\nerror: ");
-	vfoprintf(stderr, reason, ap);
-	fprintf(stderr, "\n");
-	va_end(ap);
+	    va_list ap;
+	    va_start(ap, reason);
+	    fprintf(stderr, "\nerror: ");
+	    vfoprintf(stderr, reason, ap);
+	    fprintf(stderr, "\n");
+	    va_end(ap);
     }
 
-    oop tracer= getVar(backtrace);
+    oop tracer = getVar(backtrace);
 
     if (nil != tracer) {
-	oop args= newLong(traceDepth);		GC_PROTECT(args);
-	args= cons(args, nil);
-	args= cons(traceStack, args);
-	apply(tracer, args, nil);			GC_UNPROTECT(args);
-    }
-    else {
-	if (traceDepth) {
-	    int i= traceDepth;
-	    int j= 12;
-	    while (i-- > 0) {
-		//fprintf(stderr, "%3d: ", i);
-		oop exp= arrayAt(traceStack, i);
-		fprintf(stderr, "[32m[?7l");
-		int l= fprintSource(stderr, getSource(exp));
-		if (l >= j) j= l;
-		if (!l) while (l < 3) l++, fputc('.', stderr);
-		while (l++ < j) fputc(' ', stderr);
-		fprintf(stderr, "[0m ");
-		fdumpln(stderr, arrayAt(traceStack, i));
-		fprintf(stderr, "[?7h");
+	    oop args = newLong(traceDepth);		GC_PROTECT(args);
+	    args = cons(args, nil);
+	    args = cons(traceStack, args);
+	    apply(tracer, args, nil);			GC_UNPROTECT(args);
+    } else {
+	    if (traceDepth) {
+	        int i = traceDepth;
+	        int j = 12;
+	        while (i-- > 0) {		    
+		        oop exp = arrayAt(traceStack, i);
+		        fprintf(stderr, "[32m[?7l");
+		        int l = fprintSource(stderr, getSource(exp));
+		        if (l >= j) j = l;
+		        if (!l) while (l < 3) l++, fputc('.', stderr);
+		        while (l++ < j) fputc(' ', stderr);
+		        fprintf(stderr, "[0m ");
+		        fdumpln(stderr, arrayAt(traceStack, i));
+		        fprintf(stderr, "[?7h");
+	        }
 	    }
-	}
-	else {
-	    fprintf(stderr, "no backtrace\n");
-	}
+	    else {
+	        fprintf(stderr, "no backtrace\n");
+	    }
     }
     exit(1);
 }
@@ -1580,52 +1573,41 @@ static oop eval(oop obj, oop env)
 {
     if (opt_v > 2) { printf("EVAL ");  dumpln(obj); }
     switch (getType(obj)) {
-	case Undefined:
-	case Long:
-	case Double:
-	case String:
-	case Form:
-	case Subr:
-	case Fixed: {
-	    return obj;
-	}
-	case Pair: {
-	    if (opt_O < 2) arrayAtPut(traceStack, traceDepth++, obj);
-	    oop head= eval(getHead(obj), env);						GC_PROTECT(head);
-	    if (is(Fixed, head))
-		head= apply(get(head, Fixed,function), getTail(obj), env);
-	    else  {
-		oop args= evlist(getTail(obj), env);					GC_PROTECT(args);
-		if (opt_g) arrayAtPut(traceStack, traceDepth++, cons(head, args));
-		head= apply(head, args, env);						GC_UNPROTECT(args);
-		if (opt_g) --traceDepth;
-	    }										GC_UNPROTECT(head);
-	    --traceDepth;
-	    return head;
-	}
-	case Symbol: {
-	    oop ass= findVariable(env, obj);
-	    if (nil == ass) fatal("eval: undefined variable: %P", obj);
-	    return getTail(ass);
-	}
-//     case Variable: {
-//	 if (isGlobal(obj)) return get(obj, Variable,value);
-//	 int delta= getLong(get(get(ctx, Context,env), Env,level)) - getLong(get(get(obj, Variable,env), Env,level));
-//	 oop cx= ctx;
-//	 while (delta--) cx= get(cx, Context,home);
-//	 return arrayAt(get(cx, Context,bindings), getLong(get(obj, Variable,index)));
-//     }
-	default: {
-	    fatal("cannot eval (%i): %P", getType(obj), obj);
-//	 if (opt_g) arrayAtPut(traceStack, traceDepth++, obj);
-//	 oop ev= arrayAt(get(evaluators, Variable,value), getType(obj));
-//	 if (nil != ev) {
-//	oop args= newPair(obj, nil);			GC_PROTECT(args);
-//	obj= apply(ev, args, ctx);			GC_UNPROTECT(args);
-//	 }
-//	 if (opt_g) --traceDepth;
-//	 return obj;
-	}
+	    case Undefined:
+	    case Long:
+	    case Double:
+	    case String:
+	    case Form:
+	    case Subr:
+	    case Fixed: {
+	        return obj;
+	    }
+	    case Pair: {
+	        if (opt_O < 2) arrayAtPut(traceStack, traceDepth++, obj);
+	        oop head= eval(getHead(obj), env);						
+            GC_PROTECT(head);
+	        if (is(Fixed, head))
+		        head= apply(get(head, Fixed,function), getTail(obj), env);
+	        else {
+		        oop args = evlist(getTail(obj), env);					
+                GC_PROTECT(args);
+		        if (opt_g) arrayAtPut(traceStack, traceDepth++, cons(head, args));
+		        head = apply(head, args, env);						
+                GC_UNPROTECT(args);
+		        if (opt_g) --traceDepth;
+	        }										
+            GC_UNPROTECT(head);
+	        --traceDepth;
+	        return head;
+	    }
+	    case Symbol: {
+	        oop ass= findVariable(env, obj);
+	        if (nil == ass) fatal("eval: undefined variable: %P", obj);
+	        return getTail(ass);
+	    }
+	    default: {
+	        fatal("cannot eval (%i): %P", getType(obj), obj);
+	    }
     }
     return nil;
 }
@@ -1633,10 +1615,9 @@ static oop eval(oop obj, oop env)
 static oop evlist(oop obj, oop env)
 {
     if (!is(Pair, obj)) return obj;
-    oop head= eval(getHead(obj), env);			GC_PROTECT(head);
-    oop tail= evlist(getTail(obj), env);		GC_PROTECT(tail);
-    //head= newPairFrom(head, tail, obj);		GC_UNPROTECT(tail);  GC_UNPROTECT(head);
-    head= cons(head, tail);				GC_UNPROTECT(tail);  GC_UNPROTECT(head);
+    oop head = eval(getHead(obj), env);			GC_PROTECT(head);
+    oop tail = evlist(getTail(obj), env);		GC_PROTECT(tail);
+    head = cons(head, tail);				    GC_UNPROTECT(tail);  GC_UNPROTECT(head);
     return head;
 }
 
@@ -2849,26 +2830,12 @@ accessor(float, Double, float)
 // }
 
 #if defined(_MSC_VER)
-# include "windows.h"
+    #include "windows.h"
 #else
 # define __USE_GNU
 # include <dlfcn.h>
 # undef __USE_GNU
 #endif
-
-#define DllExport __declspec(dllexport)
-
-DllExport int* dlopen(char* name) {
-	return LoadLibraryA(name);
-}
-
-DllExport int* dlsym(int* hmodule, char* procName) {
-	return GetProcAddress(hmodule, procName);
-}
-
-DllExport int dlerror() {
-	return GetLastError();
-}
 
 static subr(subr)
 {
@@ -3457,7 +3424,7 @@ static subr_ent_t subr_tab[] = {
 #if defined(DEMO_BITS)
     { " sin",			subr_sin },
     { " cos",			subr_cos },
-    { " log",			subr_log },
+    { " log",			subr_log },    
 #endif
     { " address-of",		subr_address_of },
 //     { " times",			subr_times },

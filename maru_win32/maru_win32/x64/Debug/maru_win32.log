@@ -16,14 +16,14 @@ d:\code\maru\bootstrap\c\gc.c(589): warning C4018: '<': signed/unsigned mismatch
 d:\code\maru\bootstrap\c\gc.c(589): warning C4022: 'getobj': pointer mismatch for actual parameter 2
 d:\code\maru\bootstrap\c\gc.c(621): warning C4047: '=': '_gcheader *' differs in levels of indirection from 'intptr_t'
 d:\code\maru\bootstrap\c\wcs.c(17): warning C4996: 'mbstowcs': This function or variable may be unsafe. Consider using mbstowcs_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdlib.h(931): note: see declaration of 'mbstowcs'
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdlib.h(924): note: see declaration of 'mbstowcs'
 d:\code\maru\bootstrap\c\wcs.c(33): warning C4996: 'wcstombs': This function or variable may be unsafe. Consider using wcstombs_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdlib.h(1019): note: see declaration of 'wcstombs'
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdlib.h(1012): note: see declaration of 'wcstombs'
 d:\code\maru\bootstrap\c\main.c(140): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
 d:\code\maru\bootstrap\c\main.c(273): warning C4267: 'function': conversion from 'size_t' to 'long', possible loss of data
 d:\code\maru\bootstrap\c\main.c(292): warning C4244: 'return': conversion from 'long_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(297): warning C4996: 'wcsdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _wcsdup. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\corecrt_wstring.h(580): note: see declaration of 'wcsdup'
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\corecrt_wstring.h(573): note: see declaration of 'wcsdup'
 d:\code\maru\bootstrap\c\main.c(303): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(335): warning C4244: 'return': conversion from 'long_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(356): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
@@ -34,82 +34,79 @@ d:\code\maru\bootstrap\c\main.c(532): warning C4311: 'type cast': pointer trunca
 d:\code\maru\bootstrap\c\main.c(550): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
 d:\code\maru\bootstrap\c\main.c(604): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(637): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(1732): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(1733): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
-d:\code\maru\bootstrap\c\main.c(1735): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(1736): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-d:\code\maru\bootstrap\c\main.c(1747): warning C4312: 'type cast': conversion from 'long' to 'void *' of greater size
-d:\code\maru\bootstrap\c\main.c(1784): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2021): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2046): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2055): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2064): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2086): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2175): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2192): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2196): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
-d:\code\maru\bootstrap\c\main.c(2188): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strdup. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(538): note: see declaration of 'strdup'
-d:\code\maru\bootstrap\c\main.c(2193): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
-d:\code\maru\bootstrap\c\main.c(2203): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
-d:\code\maru\bootstrap\c\main.c(2222): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
-d:\code\maru\bootstrap\c\main.c(2246): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
-d:\code\maru\bootstrap\c\main.c(2247): warning C4244: 'function': conversion from 'long_t' to 'wchar_t', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2283): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
-d:\code\maru\bootstrap\c\main.c(2265): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
-d:\code\maru\bootstrap\c\main.c(2487): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2509): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2533): warning C4244: '=': conversion from 'long_t' to 'wchar_t', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2524): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2544): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2551): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(1727): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(1728): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
+d:\code\maru\bootstrap\c\main.c(1730): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(1731): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\code\maru\bootstrap\c\main.c(1742): warning C4312: 'type cast': conversion from 'long' to 'void *' of greater size
+d:\code\maru\bootstrap\c\main.c(1779): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2016): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2041): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2050): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2059): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2081): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2170): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2187): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2191): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
+d:\code\maru\bootstrap\c\main.c(2183): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strdup. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\string.h(530): note: see declaration of 'strdup'
+d:\code\maru\bootstrap\c\main.c(2188): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
+d:\code\maru\bootstrap\c\main.c(2198): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
+d:\code\maru\bootstrap\c\main.c(2217): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
+d:\code\maru\bootstrap\c\main.c(2241): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
+d:\code\maru\bootstrap\c\main.c(2242): warning C4244: 'function': conversion from 'long_t' to 'wchar_t', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2278): warning C4312: 'type cast': conversion from 'long' to 'FILE *' of greater size
+d:\code\maru\bootstrap\c\main.c(2260): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
+d:\code\maru\bootstrap\c\main.c(2482): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2504): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2528): warning C4244: '=': conversion from 'long_t' to 'wchar_t', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2519): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2539): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2546): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2561): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(2566): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2571): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2601): warning C4244: 'function': conversion from 'long_t' to 'double', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2641): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2662): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2671): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2716): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2724): warning C4267: 'function': conversion from 'size_t' to 'long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2743): warning C4244: 'return': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2749): warning C4311: 'type cast': pointer truncation from 'oop' to 'unsigned long'
+d:\code\maru\bootstrap\c\main.c(2596): warning C4244: 'function': conversion from 'long_t' to 'double', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2636): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2657): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2666): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2711): warning C4244: 'initializing': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2719): warning C4267: 'function': conversion from 'size_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2738): warning C4244: 'return': conversion from 'long_t' to 'unsigned long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2744): warning C4311: 'type cast': pointer truncation from 'oop' to 'unsigned long'
+d:\code\maru\bootstrap\c\main.c(2780): warning C4244: '*=': conversion from 'long_t' to 'unsigned long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2780): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned char *' of greater size
+d:\code\maru\bootstrap\c\main.c(2780): warning C4244: 'initializing': conversion from 'long_t' to 'unsigned long', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2780): warning C4244: '=': conversion from 'long_t' to 'unsigned char', possible loss of data
 d:\code\maru\bootstrap\c\main.c(2785): warning C4244: '*=': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2785): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned char *' of greater size
+d:\code\maru\bootstrap\c\main.c(2785): warning C4312: 'type cast': conversion from 'unsigned long' to 'int32_t *' of greater size
 d:\code\maru\bootstrap\c\main.c(2785): warning C4244: 'initializing': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2785): warning C4244: '=': conversion from 'long_t' to 'unsigned char', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2785): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
 d:\code\maru\bootstrap\c\main.c(2790): warning C4244: '*=': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2790): warning C4312: 'type cast': conversion from 'unsigned long' to 'int32_t *' of greater size
+d:\code\maru\bootstrap\c\main.c(2790): warning C4312: 'type cast': conversion from 'unsigned long' to 'float *' of greater size
 d:\code\maru\bootstrap\c\main.c(2790): warning C4244: 'initializing': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2790): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2795): warning C4244: '*=': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2795): warning C4312: 'type cast': conversion from 'unsigned long' to 'float *' of greater size
-d:\code\maru\bootstrap\c\main.c(2795): warning C4244: 'initializing': conversion from 'long_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2795): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2921): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2929): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2790): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2912): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2920): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2928): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(2937): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2946): warning C4244: 'function': conversion from 'long_t' to 'int', possible loss of data
+d:\code\maru\bootstrap\c\main.c(2952): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(2961): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(2970): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(3023): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
-d:\code\maru\bootstrap\c\main.c(3192): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
-d:\code\maru\bootstrap\c\main.c(3231): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
-d:\code\maru\bootstrap\c\main.c(3240): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdio.h(1195): note: see declaration of 'fscanf'
-d:\code\maru\bootstrap\c\main.c(3608): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
-d:\code\maru\bootstrap\c\main.c(3539): warning C4996: 'wcsdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _wcsdup. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\corecrt_wstring.h(580): note: see declaration of 'wcsdup'
+d:\code\maru\bootstrap\c\main.c(3014): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
+d:\code\maru\bootstrap\c\main.c(3183): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
+d:\code\maru\bootstrap\c\main.c(3222): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
+d:\code\maru\bootstrap\c\main.c(3231): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdio.h(1192): note: see declaration of 'fscanf'
+d:\code\maru\bootstrap\c\main.c(3599): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
+d:\code\maru\bootstrap\c\main.c(3530): warning C4996: 'wcsdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _wcsdup. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\corecrt_wstring.h(573): note: see declaration of 'wcsdup'
   libffi.lib(prep_cif.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
 LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification
 main.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
 LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
   Generating code
   Finished generating code
-libffi.lib(prep_cif.obj) : warning LNK4099: PDB 'libffi.pdb' was not found with 'libffi.lib(prep_cif.obj)' or at 'D:\Code\maru\maru_win32\x64\Debug\libffi.pdb'; linking object as if no debug info
-libffi.lib(ffi.obj) : warning LNK4099: PDB 'libffi.pdb' was not found with 'libffi.lib(ffi.obj)' or at 'D:\Code\maru\maru_win32\x64\Debug\libffi.pdb'; linking object as if no debug info
-libffi.lib(types.obj) : warning LNK4099: PDB 'libffi.pdb' was not found with 'libffi.lib(types.obj)' or at 'D:\Code\maru\maru_win32\x64\Debug\libffi.pdb'; linking object as if no debug info
-  maru_win32.vcxproj -> D:\Code\maru\maru_win32\x64\Debug\maru_win32.exe
-  maru_win32.vcxproj -> D:\Code\maru\maru_win32\x64\Debug\maru_win32.pdb (Full PDB)
+  maru_win32.vcxproj -> D:\code\maru\maru_win32\x64\Debug\maru_win32.exe
+  maru_win32.vcxproj -> D:\code\maru\maru_win32\x64\Debug\maru_win32.pdb (Full PDB)
