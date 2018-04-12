@@ -13,3 +13,6 @@ osdefs.k
 
 tpeg.l
 tpeg.ll
+
+*.log
+*.opendb
