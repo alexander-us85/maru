@@ -6,8 +6,6 @@
 #include <signal.h>
 #include <stdint.h>
 
-#include "ffi.h"
-
 
 extern int isatty(int);
 
@@ -40,6 +38,8 @@ extern int isatty(int);
 #endif
 #include "wcs.c"
 #include "buffer.c"
+
+#include "ffi.h"
 
 union Object;
 
@@ -1091,7 +1091,7 @@ static oop findFormFunction(oop env, oop var)
 
 static oop findFormSymbol(oop env, oop var)
 {						assert(is(Symbol, var));
-    var= findVariable(env, var);		if (nil == var)		return nil;
+    var= findVariable(env, var);	if (nil == var)		return nil;
     var= getVar(var);				if (!is(Form, var))	return nil;
     return get(var, Form,symbol);
 }
@@ -2892,7 +2892,7 @@ static void replFile(FILE *stream, wchar_t *path)
 
 static void replPath(wchar_t *path)
 {
-#if 1
+#if 0
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
     wchar_t debugPath[12] = L"..\\Debug\\";
@@ -2902,6 +2902,7 @@ static void replPath(wchar_t *path)
     printf("Current working directory: ");
     printf(cwd);
     printf("\n");
+    free(result);
 #endif
     FILE* stream = fopen(wcs2mbs(path), "r");
     if (!stream) {
