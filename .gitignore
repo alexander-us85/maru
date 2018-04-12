@@ -16,3 +16,7 @@ tpeg.ll
 
 *.log
 *.opendb
+*.obj
+*.exe
+*.pdb
+*.idb

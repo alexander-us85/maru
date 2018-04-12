@@ -1490,7 +1490,7 @@ static void fatal(char *reason, ...)
 	        fprintf(stderr, "no backtrace\n");
 	    }
     }
-    exit(1);
+    //exit(1);
 }
 
 static oop evlist(oop obj, oop env);
@@ -2890,7 +2890,17 @@ static void replFile(FILE *stream, wchar_t *path)
 
 static void replPath(wchar_t *path)
 {
-    FILE *stream = fopen(wcs2mbs(path), "r");
+
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    if (IsDebuggerPresent()) {
+        wchar_t debugPath[10] = L"..\\Debug\\";
+        wchar_t* result = malloc(wcslen(debugPath) + wcslen(path) + 1);
+        wcscpy(result, debugPath);
+        wcscat(result, path);
+        path = result;
+    }
+    FILE* stream = fopen(wcs2mbs(path), "r");
     if (!stream) {
 	    int err = errno;
 	    fprintf(stderr, "\nerror: ");
@@ -2996,6 +3006,8 @@ static subr_ent_t subr_tab[] = {
     { " address-of",		    subr_address_of             },
     { 0,			            0                           }};
 
+static BOOL ReplStarted = 0;
+
 int main(int argc, char **argv)
 {
     switch (sizeof(long)) {
@@ -3032,7 +3044,7 @@ int main(int argc, char **argv)
     GC_add_root(&input);
     GC_add_root(&output);
 
-    symbols= newArray(0);
+    symbols = newArray(0);
 
     s_locals		    = intern(L"*locals*");		   GC_add_root(&s_locals		    );
     s_set		        = intern(L"set");			   GC_add_root(&s_set		        );
@@ -3082,7 +3094,7 @@ int main(int argc, char **argv)
     }
 
     tmp = nil; GC_UNPROTECT(tmp);
-    int repled= 0;
+    int repled = 0;
 
     {
 	    tmp= nil;
