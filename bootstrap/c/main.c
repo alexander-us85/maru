@@ -1476,24 +1476,24 @@ static void fatal(char *reason, ...)
 	        int j = 12;
 	        while (i-- > 0) {		    
 		        oop exp = arrayAt(traceStack, i);
-		        fprintf(stderr, "[32m[?7l");
+		        //fprintf(stderr, "[32m[?7l");
 		        int l = fprintSource(stderr, getSource(exp));
 		        if (l >= j) j = l;
 		        if (!l) while (l < 3) l++, fputc('.', stderr);
 		        while (l++ < j) fputc(' ', stderr);
-		        fprintf(stderr, "[0m ");
+		        //fprintf(stderr, "[0m ");
 		        fdumpln(stderr, arrayAt(traceStack, i));
-		        fprintf(stderr, "[?7h");
+		        //fprintf(stderr, "[?7h");
 	        }
 	    }
 	    else {
 	        fprintf(stderr, "no backtrace\n");
 	    }
     }
-    //exit(1);
 }
 
 static oop evlist(oop obj, oop env);
+static int ReplStarted = 0;
 
 static oop eval(oop obj, oop env)
 {
@@ -1528,7 +1528,10 @@ static oop eval(oop obj, oop env)
 	    }
 	    case Symbol: {
 	        oop ass= findVariable(env, obj);
-	        if (nil == ass) fatal("eval: undefined variable: %P", obj);
+            if (nil == ass) {
+                fatal("eval: undefined variable: %P", obj);
+                if (ReplStarted != 0) return nil;
+            }
 	        return getTail(ass);
 	    }
 	    default: {
@@ -2847,15 +2850,17 @@ typedef struct { char *name;  imp_t imp; } subr_ent_t;
 // WARNING
 static subr_ent_t subr_tab[65536];
 
+
 static void replFile(FILE *stream, wchar_t *path)
 {
     setVar(input, newLong((long)stream));
     beginSource(path);
     oop obj = nil;
     GC_PROTECT(obj);
+    ReplStarted = TRUE;
     for (;;) {
 	    if (stream == stdin) {
-	        printf("==>");
+	        printf("==> ");
 	        fflush(stdout);
 	    }
 	    obj = readExpr(stream);
@@ -2890,23 +2895,25 @@ static void replFile(FILE *stream, wchar_t *path)
 
 static void replPath(wchar_t *path)
 {
-
+#if 1
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
-    if (IsDebuggerPresent()) {
-        wchar_t debugPath[10] = L"..\\Debug\\";
-        wchar_t* result = malloc(wcslen(debugPath) + wcslen(path) + 1);
-        wcscpy(result, debugPath);
-        wcscat(result, path);
-        path = result;
-    }
+    wchar_t debugPath[12] = L"..\\Debug\\";
+    wchar_t* result = malloc(wcslen(debugPath) + wcslen(path) + 1);
+    wcscpy(result, debugPath);
+    wcscat(result, path);
+    printf("Current working directory: ");
+    printf(cwd);
+    printf("\n");
+#endif
     FILE* stream = fopen(wcs2mbs(path), "r");
     if (!stream) {
-	    int err = errno;
+	    int err = errno;        
 	    fprintf(stderr, "\nerror: ");
 	    errno = err;
 	    perror(wcs2mbs(path));
-	    fatal(0);
+        getchar();
+        exit(0);
     }
     fwide(stream, 1);
     if (fscanf(stream, "#!%*[^\012\015]"));
@@ -3005,8 +3012,6 @@ static subr_ent_t subr_tab[] = {
     { " log",			        subr_log                    },    
     { " address-of",		    subr_address_of             },
     { 0,			            0                           }};
-
-static BOOL ReplStarted = 0;
 
 int main(int argc, char **argv)
 {
