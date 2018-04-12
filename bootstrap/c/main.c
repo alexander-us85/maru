@@ -1476,14 +1476,11 @@ static void fatal(char *reason, ...)
 	        int j = 12;
 	        while (i-- > 0) {		    
 		        oop exp = arrayAt(traceStack, i);
-		        //fprintf(stderr, "[32m[?7l");
 		        int l = fprintSource(stderr, getSource(exp));
 		        if (l >= j) j = l;
 		        if (!l) while (l < 3) l++, fputc('.', stderr);
 		        while (l++ < j) fputc(' ', stderr);
-		        //fprintf(stderr, "[0m ");
 		        fdumpln(stderr, arrayAt(traceStack, i));
-		        //fprintf(stderr, "[?7h");
 	        }
 	    }
 	    else {
