@@ -41,15 +41,15 @@
 
 typedef struct _gcheader
 {
-  unsigned long		size  : BITS_PER_WORD - 8	__attribute__((__packed__));
+  size_t		size  : BITS_PER_WORD - 8	/*__attribute__((__packed__))*/;
   union {
     unsigned int	flags : 3;
     struct {
       unsigned int	used  : 1;
       unsigned int	atom  : 1;
       unsigned int	mark  : 1;
-    }							__attribute__((__packed__));
-  }							__attribute__((__packed__));
+    }							/*__attribute__((__packed__))*/;
+  }							/*__attribute__((__packed__))*/;
   struct _gcheader *next;
   struct _gcfinaliser	*finalisers;
 #ifndef NDEBUG
@@ -252,7 +252,7 @@ GC_API void GC_default_mark_function(void *ptr)
   while (pos <= lim)
     {
       void *field= *pos;
-      if (field && !((long)field & 1))
+      if (field && !((long long)field & 1))
 	GC_mark(field);
       ++pos;
     }
@@ -262,7 +262,7 @@ GC_mark_function_t GC_mark_function= GC_default_mark_function;
 
 GC_API void GC_mark(void *ptr)
 {
-  if ((long)ptr & 1) return;
+  if ((long long)ptr & 1) return;
   gcheader *hdr= ptr2hdr(ptr);
 #if VERBOSE > 3
   fprintf(stderr, "mark? %p -> %p used %d atom %d mark %d\n", ptr, hdr, hdr->used, hdr->atom, hdr->mark);
@@ -507,7 +507,7 @@ static void put32 (FILE *out, uint32_t value)	{ fwrite(&value, sizeof(value), 1,
 static void putobj(FILE *out, void *value)
 {
     //printf("  field %p\n", value);
-    if (value && !((long)value & 1))
+    if (value && !((long long)value & 1))
 	fwrite(&ptr2hdr(value)->finalisers, sizeof(void *), 1, out);
     else
 	fwrite(&value, sizeof(void *), 1, out);
@@ -577,7 +577,7 @@ static int32_t get32(FILE *in, int32_t *p)	{ if(fread(p, sizeof(*p), 1, in));  r
 static void *getobj(FILE *in, void **value)
 {
     if (fread(value, sizeof(void *), 1, in));
-    if (*value && !(((long)*value) & 1)) (intptr_t)*value += (long)gcbase.next;
+    if (*value && !(((long long)*value) & 1)) (intptr_t)*value += (long)gcbase.next;
     //printf("  field %p\n", *value);
     return *value;
 }

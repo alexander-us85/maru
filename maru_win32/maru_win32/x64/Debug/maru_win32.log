@@ -1,35 +1,24 @@
 ﻿  main.c
-d:\code\maru\bootstrap\c\gc.c(45): warning C4214: nonstandard extension used: bit field types other than int
-d:\code\maru\bootstrap\c\gc.c(46): warning C4161: #pragma pack(pop...): more pops than pushes
-d:\code\maru\bootstrap\c\gc.c(54): warning C4201: nonstandard extension used: nameless struct/union
-d:\code\maru\bootstrap\c\gc.c(55): warning C4161: #pragma pack(pop...): more pops than pushes
-d:\code\maru\bootstrap\c\gc.c(56): warning C4201: nonstandard extension used: nameless struct/union
-d:\code\maru\bootstrap\c\gc.c(145): warning C4047: '==': 'intptr_t' differs in levels of indirection from '_gcheader *'
-d:\code\maru\bootstrap\c\gc.c(158): warning C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\gc.c(160): warning C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\gc.c(190): warning C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
-d:\code\maru\bootstrap\c\gc.c(259): warning C4311: 'type cast': pointer truncation from 'void *' to 'long'
-d:\code\maru\bootstrap\c\gc.c(255): warning C4047: 'initializing': 'void **' differs in levels of indirection from 'std::size_t'
-d:\code\maru\bootstrap\c\gc.c(269): warning C4311: 'type cast': pointer truncation from 'void *' to 'long'
-d:\code\maru\bootstrap\c\gc.c(441): warning C4047: '==': 'intptr_t' differs in levels of indirection from '_gcheader *'
-d:\code\maru\bootstrap\c\gc.c(514): warning C4311: 'type cast': pointer truncation from 'void *' to 'long'
-d:\code\maru\bootstrap\c\gc.c(528): warning C4018: '<': signed/unsigned mismatch
-d:\code\maru\bootstrap\c\gc.c(565): warning C4267: 'function': conversion from 'size_t' to 'uint32_t', possible loss of data
-d:\code\maru\bootstrap\c\gc.c(584): warning C4311: 'type cast': pointer truncation from 'void *' to 'long'
-d:\code\maru\bootstrap\c\gc.c(584): warning C4311: 'type cast': pointer truncation from '_gcheader *' to 'long'
-d:\code\maru\bootstrap\c\gc.c(584): warning C4213: nonstandard extension used: cast on l-value
-d:\code\maru\bootstrap\c\gc.c(593): warning C4018: '<': signed/unsigned mismatch
-d:\code\maru\bootstrap\c\gc.c(593): warning C4022: 'getobj': pointer mismatch for actual parameter 2
-d:\code\maru\bootstrap\c\gc.c(625): warning C4047: '=': '_gcheader *' differs in levels of indirection from 'intptr_t'
-d:\code\maru\bootstrap\c\main.c(37): warning C4103: alignment changed after including header, may be due to missing #pragma pack(pop)
+d:\code\maru\bootstrap\c\gc.c(44): warning C4214: nonstandard extension used: bit field types other than int
+d:\code\maru\bootstrap\c\gc.c(51): warning C4201: nonstandard extension used: nameless struct/union
+d:\code\maru\bootstrap\c\gc.c(52): warning C4201: nonstandard extension used: nameless struct/union
+d:\code\maru\bootstrap\c\gc.c(141): warning C4047: '==': 'std::size_t' differs in levels of indirection from '_gcheader *'
+d:\code\maru\bootstrap\c\gc.c(251): warning C4047: 'initializing': 'void **' differs in levels of indirection from 'std::size_t'
+d:\code\maru\bootstrap\c\gc.c(437): warning C4047: '==': 'std::size_t' differs in levels of indirection from '_gcheader *'
+d:\code\maru\bootstrap\c\gc.c(540): warning C4267: '+=': conversion from 'size_t' to 'long', possible loss of data
+d:\code\maru\bootstrap\c\gc.c(553): warning C4267: 'function': conversion from 'size_t' to 'uint32_t', possible loss of data
+d:\code\maru\bootstrap\c\gc.c(561): warning C4267: 'function': conversion from 'size_t' to 'uint32_t', possible loss of data
+d:\code\maru\bootstrap\c\gc.c(580): warning C4311: 'type cast': pointer truncation from '_gcheader *' to 'long'
+d:\code\maru\bootstrap\c\gc.c(580): warning C4213: nonstandard extension used: cast on l-value
+d:\code\maru\bootstrap\c\gc.c(589): warning C4022: 'getobj': pointer mismatch for actual parameter 2
+d:\code\maru\bootstrap\c\gc.c(620): warning C4267: '-=': conversion from 'size_t' to 'int32_t', possible loss of data
+d:\code\maru\bootstrap\c\gc.c(621): warning C4047: '=': '_gcheader *' differs in levels of indirection from 'std::size_t'
 d:\code\maru\bootstrap\c\wcs.c(17): warning C4996: 'mbstowcs': This function or variable may be unsafe. Consider using mbstowcs_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdlib.h(924): note: see declaration of 'mbstowcs'
 d:\code\maru\bootstrap\c\wcs.c(33): warning C4996: 'wcstombs': This function or variable may be unsafe. Consider using wcstombs_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\stdlib.h(1012): note: see declaration of 'wcstombs'
 d:\code\maru\bootstrap\c\buffer.c(35): warning C4244: '=': conversion from 'int' to 'wchar_t', possible loss of data
-d:\code\maru\libffi\ffi.h(334): warning C4324: '<unnamed-tag>': structure was padded due to alignment specifier
 d:\code\maru\bootstrap\c\main.c(81): warning C4200: nonstandard extension used: zero-sized array in struct/union
-d:\code\maru\bootstrap\c\main.c(133): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
 d:\code\maru\bootstrap\c\main.c(264): warning C4267: 'function': conversion from 'size_t' to 'long', possible loss of data
 d:\code\maru\bootstrap\c\main.c(283): warning C4244: 'return': conversion from 'long_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(288): warning C4996: 'wcsdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _wcsdup. See online help for details.
@@ -40,8 +29,6 @@ d:\code\maru\bootstrap\c\main.c(347): warning C4267: 'initializing': conversion 
 d:\code\maru\bootstrap\c\main.c(376): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(383): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(393): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-d:\code\maru\bootstrap\c\main.c(464): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
-d:\code\maru\bootstrap\c\main.c(482): warning C4311: 'type cast': pointer truncation from 'oop' to 'long'
 d:\code\maru\bootstrap\c\main.c(530): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
 d:\code\maru\bootstrap\c\main.c(563): warning C4244: 'function': conversion from 'long_t' to 'long', possible loss of data
 d:\code\maru\bootstrap\c\main.c(662): warning C4457: declaration of 'c' hides function parameter
@@ -198,7 +185,7 @@ d:\code\maru\bootstrap\c\main.c(3104): warning C4456: declaration of '_sr_tmp' h
 d:\code\maru\bootstrap\c\main.c(3115): warning C4311: 'type cast': pointer truncation from 'FILE *' to 'long'
 d:\code\maru\bootstrap\c\main.c(3092): warning C4996: 'wcsdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _wcsdup. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.14393.0\ucrt\corecrt_wstring.h(573): note: see declaration of 'wcsdup'
-d:\code\maru\bootstrap\c\gc.c(201): warning C4702: unreachable code
+d:\code\maru\bootstrap\c\gc.c(197): warning C4702: unreachable code
 d:\code\maru\bootstrap\c\main.c(2233): warning C4706: assignment within conditional expression
 d:\code\maru\bootstrap\c\main.c(2247): warning C4706: assignment within conditional expression
 d:\code\maru\bootstrap\c\main.c(2236): warning C4701: potentially uninitialized local variable 'arg' used

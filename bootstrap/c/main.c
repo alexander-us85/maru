@@ -130,7 +130,7 @@ static void fatal(char *reason, ...);
     #define checkType(OBJ, TYPE) _checkType(OBJ, TYPE, #TYPE, __FILE__, __LINE__)
     static inline oop _checkType(oop obj, int type, char *name, char *file, int line)
     {
-        if (obj && !((long)obj & 1) && !ptr2hdr(obj)->used) {
+        if (obj && !((long long)obj & 1) && !ptr2hdr(obj)->used) {
             fatal("%s:%i: attempt to access dead object %s\n", file, line, name);
         }
         if (!is(type, obj)) {
@@ -461,7 +461,7 @@ static oop findVariable(oop env, oop name)
 {
     while (env) {
 	    if (env == globalNamespace) {
-	        long hash = ((long)name) % GLOBAL_CACHE_SIZE;
+	        long hash = ((long long)name) % GLOBAL_CACHE_SIZE;
 	        oop  ent  = ((oop *)_globalCache)[hash];
 	        if ((nil != ent) && (name == getHead(ent))) return ent;
 	        return ((oop *)_globalCache)[hash]= findVariable2(env, name);
@@ -479,7 +479,7 @@ static oop findNamespaceVariable(oop env, oop name)
     oop end = findEnvironment(cdr(env));
     while (beg != end) {
 	if (beg == globalNamespace) {
-	    long hash = ((long)name) % GLOBAL_CACHE_SIZE;
+	    long hash = ((long long)name) % GLOBAL_CACHE_SIZE;
 	    oop ent = ((oop *)_globalCache)[hash];
 	    if ((nil != ent) && (name == getHead(ent))) return ent;
 	    return ((oop *)_globalCache)[hash]= findVariable2(env, name);
