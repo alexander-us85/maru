@@ -138,7 +138,7 @@ GC_API void *GC_malloc(size_t lbs)
 #  endif
     if (!hdr->used) {
         // WARNING
-      while ((!hdr->next->used) && ((intptr_t)hdr2ptr(hdr) + hdr->size == hdr->next)) {
+      while ((!hdr->next->used) && ((intptr_t)hdr2ptr(hdr) + hdr->size == (intptr_t)hdr->next)) {
 	hdr->size += sizeof(gcheader) + hdr->next->size;
 	hdr->next= hdr->next->next;
       }
@@ -247,8 +247,8 @@ GC_pre_mark_function_t GC_pre_mark_function= GC_default_pre_mark_function;
 GC_API void GC_default_mark_function(void *ptr)
 {
   gcheader *hdr= ptr2hdr(ptr);
-  void	  **pos= ptr;
-  void	  **lim= (intptr_t)hdr2ptr(hdr) + hdr->size - sizeof(void *);
+  void	  **pos= (void*)ptr;
+  void	  **lim= (void*)((intptr_t)hdr2ptr(hdr) + hdr->size - sizeof(void *));
   while (pos <= lim)
     {
       void *field= *pos;
@@ -434,7 +434,7 @@ GC_API double GC_count_fragments(void)
       //printf("%p\t%7d\n",   hdr, (int)hdr->size);
     }
     else {
-      while ((!hdr->next->used) && ((intptr_t)hdr2ptr(hdr) + hdr->size == hdr->next)) {
+      while ((!hdr->next->used) && ((gcheader*)((intptr_t)hdr2ptr(hdr) + hdr->size) == hdr->next)) {
 	hdr->size += sizeof(gcheader) + hdr->next->size;
 	hdr->next= hdr->next->next;
       }
@@ -501,7 +501,7 @@ GC_API void GC_register_finaliser(void *ptr, GC_finaliser_t finaliser, void *dat
 
 //static void put8  (FILE *out, uint8_t  value)	{ fwrite(&value, sizeof(value), 1, out); }
 //static void put16 (FILE *out, uint16_t value)	{ fwrite(&value, sizeof(value), 1, out); }
-static void put32 (FILE *out, uint32_t value)	{ fwrite(&value, sizeof(value), 1, out); }
+static void put32 (FILE *out, size_t value)	{ fwrite(&value, sizeof(value), 1, out); }
 //static void put64 (FILE *out, uint64_t value)	{ fwrite(&value, sizeof(value), 1, out); }
 
 static void putobj(FILE *out, void *value)
@@ -530,7 +530,7 @@ GC_API void GC_saver(FILE *out, void *ptr)
 GC_API void GC_save(FILE *out, void (*saver)(FILE *, void *))
 {
     long numObjs= 0;
-    long numBytes= 0;
+    size_t numBytes= 0;
     gcheader *hdr= gcbase.next;
     int i;
     if (!saver) saver= GC_saver;
@@ -542,7 +542,7 @@ GC_API void GC_save(FILE *out, void (*saver)(FILE *, void *))
 	}
 	hdr= hdr->next;
     } while (hdr != &gcbase);
-    printf("saving %ld bytes, %ld objects, %ld roots\n", numBytes, numObjs, (long)numRoots);
+    printf("saving %ld bytes, %ld objects, %ld roots\n", (long)numBytes, numObjs, (long)numRoots);
     put32(out, GC_MAGIC);
     put32(out, numObjs);
     put32(out, numBytes);
@@ -572,12 +572,12 @@ GC_API void GC_save(FILE *out, void (*saver)(FILE *, void *))
     } while (hdr != &gcbase);
 }
 
-static int32_t get32(FILE *in, int32_t *p)	{ if(fread(p, sizeof(*p), 1, in));  return *p; }
+static size_t get32(FILE *in, size_t *p)	{ if(fread(p, sizeof(*p), 1, in));  return *p; }
 
 static void *getobj(FILE *in, void **value)
 {
     if (fread(value, sizeof(void *), 1, in));
-    if (*value && !(((long long)*value) & 1)) (intptr_t)*value += (long)gcbase.next;
+    if (*value && !(((long long)*value) & 1)) (intptr_t)*value += (long long)gcbase.next;
     //printf("  field %p\n", *value);
     return *value;
 }
@@ -586,15 +586,15 @@ GC_API void GC_loader(FILE *in, void *ptr)
 {
     gcheader *hdr= ptr2hdr(ptr);
     if (hdr->atom)	{ if (fread(hdr2ptr(hdr), hdr->size, 1, in)); }
-    else		{ int i;  for (i= 0;  i < hdr->size;  i += sizeof(void *))  getobj(in, (intptr_t)ptr + i); }
+    else { int i;  for (i= 0;  i < hdr->size;  i += sizeof(void *))  getobj(in, (void*)((intptr_t)ptr + i)); }
 }
 
 GC_API int GC_load(FILE *in, void (*loader)(FILE *, void*))
 {
-    int32_t  magic    = 0;
-    int32_t  numObjs  = 0;
-    int32_t  numBytes = 0;
-    int32_t  tmp32;
+    size_t  magic    = 0;
+    size_t  numObjs  = 0;
+    size_t  numBytes = 0;
+    size_t  tmp32;
     int      i;
     if (!loader) loader= GC_loader;
     if (get32(in, &magic) != GC_MAGIC) return 0;
@@ -615,10 +615,10 @@ GC_API int GC_load(FILE *in, void (*loader)(FILE *, void*))
 	void *ptr= hdr2ptr(hdr);
 	//printf("reading object %p -> %p\n", hdr2ptr(hdr) - (long)gcbase.next, hdr2ptr(hdr));
 	hdr->size=  get32(in, &tmp32);
-	hdr->flags= get32(in, &tmp32);
+	hdr->flags= (unsigned int)get32(in, &tmp32);
 	loader(in, hdr2ptr(hdr));
 	numBytes -= sizeof(gcheader) + hdr->size;		assert(numBytes >= 0);
-	hdr->next= (intptr_t)ptr + hdr->size;
+	hdr->next= (gcheader*)((intptr_t)ptr + hdr->size);
 	hdr= hdr->next;
 	hdr->flags= 0;
 	hdr->next= &gcbase;

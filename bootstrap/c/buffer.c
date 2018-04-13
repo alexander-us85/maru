@@ -32,7 +32,7 @@ static void buffer_append(struct buffer *b, int c)
     b->buffer= b->buffer
 	? realloc(b->buffer, sizeof(wchar_t) * (b->size *= 2))
 	: malloc(sizeof(wchar_t) * (b->size= 32));
-  b->buffer[b->position++]= c;
+     b->buffer[b->position++] = (wchar_t)c;
 }
 
 static void buffer_appendAll(struct buffer *b, const wchar_t *s)

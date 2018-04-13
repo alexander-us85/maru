@@ -227,9 +227,10 @@ static oop newData(size_t len)		{ return _newBits(Data, len); }
     }
 #else
     #define isLong(X) is(Long, (X))
-    static oop newLong(long bits) { 
+    static oop newLong(long long bits) {
+        long tBits = (long) bits;
         oop obj = newBits(Long);  
-        set(obj, Long,bits, bits);  
+        set(obj, Long,bits, tBits);  
         return obj; 
     }
     #define getLong(X) get((X), Long,bits)
@@ -260,9 +261,9 @@ static oop _newString(size_t len)
 {
     wchar_t *gstr = (wchar_t *)_newBits(-1, sizeof(wchar_t) * (len + 1)); /* + 1 to ensure null terminator */
     GC_PROTECT(gstr);	
-    oop obj = newOops(String);			 GC_PROTECT(obj);
-    set(obj, String,size, newLong(len)); GC_UNPROTECT(obj);
-    set(obj, String,bits, gstr);		 GC_UNPROTECT(gstr);
+    oop obj = newOops(String);			        GC_PROTECT(obj);
+    set(obj, String,size, newLong((long)len));  GC_UNPROTECT(obj);
+    set(obj, String,bits, gstr);		        GC_UNPROTECT(gstr);
     return obj;
 }
 
@@ -278,18 +279,18 @@ static oop newString(wchar_t *cstr)
     return newStringN(cstr, wcslen(cstr));
 }
 
-static int stringLength(oop string)
+static long_t stringLength(oop string)
 {
-    return getLong(get(string, String,size));
+    return getLong(get(string, String, size));
 }
 
 static oop newSymbol(wchar_t *cstr)	{ 
     oop obj= newBits(Symbol);	
-    set(obj, Symbol,bits, wcsdup(cstr));			
+    set(obj, Symbol,bits, _wcsdup(cstr));			
     return obj; 
 }
 
-static int symbolLength(oop symbol)
+static size_t symbolLength(oop symbol)
 {
     return wcslen(get(symbol, Symbol,bits));
 }
@@ -321,37 +322,37 @@ static oop newArray(int size)
     return obj;
 }
 
-static int arrayLength(oop obj)
+static long_t arrayLength(oop obj)
 {
     return is(Array, obj) ? getLong(get(obj, Array,size)) : 0;
 }
 
-static oop arrayAt(oop array, int index)
+static oop arrayAt(oop array, size_t index)
 {
     if (is(Array, array)) {
 	    oop elts = get(array, Array,_array);
-	    int size = arrayLength(array);
+	    long_t size = arrayLength(array);
 	    if ((unsigned)index < (unsigned)size)
 	        return ((oop *)elts)[index];
     }
     return nil;
 }
 
-static oop arrayAtPut(oop array, int index, oop val)
+static oop arrayAtPut(oop array, long_t index, oop val)
 {
     if (is(Array, array)) {
-	    int size = arrayLength(array);
+	    long_t size = arrayLength(array);
 	    oop elts = get(array, Array,_array);
 	    if ((unsigned)index >= (unsigned)size) {
 	        GC_PROTECT(array);
-	        int cap = GC_size(elts) / sizeof(oop);
-	        if (index >= cap) {
-		        while (cap <= index) cap *= 2;
+	        size_t cap = GC_size(elts) / sizeof(oop);
+	        if ((unsigned)index >= cap) {
+		        while (cap <= (unsigned)index) cap *= 2;
 		        oop oops = _newOops(_Array, sizeof(oop) * cap);
 		        memcpy((oop *)oops, (oop *)elts, sizeof(oop) * size);
 		        elts = set(array, Array,_array, oops);
 	        }
-	        set(array, Array,size, newLong(index + 1));
+	        set(array, Array,size, newLong((long)index + 1));
 	        GC_UNPROTECT(array);
 	    }
 	    return ((oop *)elts)[index]= val;
@@ -380,7 +381,7 @@ static oop arrayInsert(oop obj, size_t index, oop value)
 static oop oopAt(oop obj, int index)
 {
     if (obj && !isLong(obj) && !GC_atomic(obj)) {
-	    int size = GC_size(obj) / sizeof(oop);
+	    size_t size = GC_size(obj) / sizeof(oop);
 	    if ((unsigned)index < (unsigned)size) 
             return ((oop *)obj)[index];
     }
@@ -390,7 +391,7 @@ static oop oopAt(oop obj, int index)
 static oop oopAtPut(oop obj, int index, oop value)
 {
     if (obj && !isLong(obj) && !GC_atomic(obj)) {
-	    int size = GC_size(obj) / sizeof(oop);
+	    size_t size = GC_size(obj) / sizeof(oop);
 	    if ((unsigned)index < (unsigned)size) 
             return ((oop *)obj)[index]= value;
     }
@@ -560,7 +561,7 @@ static void beginSource(wchar_t *path)
 
 static void advanceSource(void)
 {
-    currentLine = newLong(getLong(currentLine) + 1);
+    currentLine = newLong((long)getLong(currentLine) + 1);
     set(currentSource, Pair,source, cons(currentPath, currentLine));
 }
 
@@ -953,8 +954,8 @@ static void doprint(FILE *stream, oop obj, int storing)
 	        break;
 	    }
 	    case Array: {
-	        int i, len= arrayLength(obj);
-	        fprintf(stream, "Array<%d>(", arrayLength(obj));
+	        int i, len= (int)arrayLength(obj);
+	        fprintf(stream, "Array<%d>(",(int) arrayLength(obj));
 	        for (i = 0;	i < len;  ++i) {
 		        if (i) fprintf(stream, " ");
 		        doprint(stream, arrayAt(obj, i), storing);
@@ -1650,7 +1651,7 @@ static void ffpointer(oop arg, void **argp, arg_t *buf)
     switch (getType(arg)) {
 	    case Undefined:	ptr = 0;					        break;
 	    case Data:	    ptr = (void *)arg;			        break;
-	    case Long:	    ptr = (void *)(long)getLong(arg);	break;
+	    case Long:	    ptr = (void *)getLong(arg);	        break;
 	    case Double:	ptr = (void *)arg;			        break;
 	    case String:	ptr = get(arg, String,bits);		break;
 	    case Symbol:	ptr = get(arg, Symbol,bits);		break;
@@ -1686,7 +1687,7 @@ static ffi_type *ffdefault(oop arg, void **argp, arg_t *buf)
     switch (getType(arg))
     {
 	    case Undefined:	buf->arg_pointer= 0;					           *argp = &buf->arg_pointer;	return &ffi_type_pointer;
-	    case Long:	    buf->arg_long    = getLong(arg);				   *argp = &buf->arg_long;		return &ffi_type_long;
+	    case Long:	    buf->arg_long    = (long)getLong(arg);			   *argp = &buf->arg_long;		return &ffi_type_long;
 	    case Double:	buf->arg_double  = getDouble(arg);			       *argp = &buf->arg_double;	return &ffi_type_double;
 	    case String:	buf->arg_string  = wcs2mbs(get(arg, String,bits)); *argp = &buf->arg_string;	return &ffi_type_pointer;
 	    case Subr:	    buf->arg_pointer = get(arg, Subr,imp);			   *argp = &buf->arg_pointer;	return &ffi_type_pointer;
@@ -2045,7 +2046,7 @@ static subr(ne)
 static subr(exit)
 {
     oop n= car(args);
-    exit(isLong(n) ? getLong(n) : 0);
+    exit(isLong(n) ? (int)getLong(n) : 0);
 }
 
 static subr(abort)
@@ -2058,22 +2059,22 @@ static subr(open)
 {
     oop arg = car(args);
     if (!is(String, arg)) { fprintf(stderr, "open: non-string argument: ");  fdumpln(stderr, arg);  fatal(0); }
-    char *name = strdup(wcs2mbs(get(arg, String,bits)));
+    char *name = _strdup(wcs2mbs(get(arg, String,bits)));
     char *mode = "r";
     long  wide = 1;
     if (is(String, cadr(args))) mode = wcs2mbs(get(cadr(args), String,bits));
-    if (is(Long, caddr(args)))  wide = getLong(caddr(args));
+    if (is(Long, caddr(args)))  wide = (long)getLong(caddr(args));
     FILE *stream = (FILE *)fopen(name, mode);
     free(name);
     if (stream) fwide(stream, wide);
-    return stream ? newLong((long)stream) : nil;
+    return stream ? newLong((long long)stream) : nil;
 }
 
 static subr(close)
 {
     oop arg = car(args);
     if (!isLong(arg)) { fprintf(stderr, "close: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0); }
-    fclose((FILE *)(long)getLong(arg));
+    fclose((FILE *)getLong(arg));
     return arg;
 }
 
@@ -2082,7 +2083,7 @@ static subr(getc)
     oop arg = car(args);
     if (nil == arg) arg = getVar(input);
     if (!isLong(arg)) { fprintf(stderr, "getc: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0); }
-    FILE *stream = (FILE *)(long)getLong(arg);
+    FILE *stream = (FILE *)getLong(arg);
     int c = getwc(stream);
     return (WEOF == c) ? nil : newLong(c);
 }
@@ -2094,8 +2095,8 @@ static subr(putc)
     if (nil == arg) arg = getVar(output);
     if (!isLong(chr)) { fprintf(stderr, "putc: non-integer character: "); fdumpln(stderr, chr); fatal(0); }
     if (!isLong(arg)) { fprintf(stderr, "putc: non-integer argument: ");  fdumpln(stderr, arg); fatal(0); }
-    FILE *stream = (FILE *)(long)getLong(arg);
-    int c = putwc(getLong(chr), stream);
+    FILE *stream = (FILE *)getLong(arg);
+    int c = putwc((wchar_t)getLong(chr), stream);
     return (WEOF == c) ? nil : chr;
 }
 
@@ -2130,7 +2131,7 @@ static subr(read)
 	    fclose(stream);					             GC_UNPROTECT(head);
 	    endSource();
     } else if (isLong(arg)) {
-	    stream = (FILE *)(long)getLong(arg);
+	    stream = (FILE *)(long long)getLong(arg);
 	    if (stream) head = readExpr(stream);
 	    if (head == DONE) head = nil;
     } else {
@@ -2314,7 +2315,7 @@ static subr(stringP)
 static subr(string)
 {
     oop arg = car(args);
-    int num = isLong(arg) ? getLong(arg) : 0;
+    long_t num = isLong(arg) ? getLong(arg) : 0;
     return _newString(num);
 }
 
@@ -2322,7 +2323,7 @@ static subr(string_length)
 {
     arity1(args, "string-length");
     oop arg = getHead(args);
-    int len = 0;
+    long_t len = 0;
     switch (getType(arg)) {
 	    case String: len= stringLength(arg); break;
 	    case Symbol: len= symbolLength(arg); break;
@@ -2336,10 +2337,10 @@ static subr(string_at)
     arity2(args, "string-at");
     oop arr = getHead(args);
     oop arg = getHead(getTail(args)); if (!isLong(arg)) return nil;
-    int idx = getLong(arg);
+    long_t idx = getLong(arg);
     switch (getType(arr)) {
 	    case String: if (0 <= idx && idx < stringLength(arr)) return newLong(get(arr, String,bits)[idx]); break;
-	    case Symbol: if (0 <= idx && idx < symbolLength(arr)) return newLong(get(arr, Symbol,bits)[idx]); break;
+	    case Symbol: if (0 <= idx && idx < (long_t)symbolLength(arr)) return newLong(get(arr, Symbol,bits)[idx]); break;
 	    default:	 fatal("string-at: non-String argument: %P", arr);
     }
     return nil;
@@ -2370,16 +2371,16 @@ static subr(set_string_at)
         fatal(0); 
     }
 
-    int idx = getLong(arg);
+    long_t idx = getLong(arg);
     if (idx < 0) return nil;
-    int len = stringLength(arr);
+    long_t len = stringLength(arr);
     if (len <= idx) {
 	    if (len < 2) len = 2;
 	    while (len <= idx) len *= 2;
 	    set(arr, String,bits, (wchar_t *)GC_realloc(get(arr, String,bits), sizeof(wchar_t) * (len + 1)));
 	    set(arr, String,size, newLong(len));
     }
-    get(arr, String,bits)[idx] = getLong(val);
+    get(arr, String,bits)[idx] = (wchar_t)getLong(val);
     return val;
 }
 
@@ -2391,8 +2392,8 @@ static subr(string_copy)	// string from len
         fdumpln(stderr, str);  
         fatal(0); 
     }
-    int ifr = 0;
-    int sln = stringLength(str);
+    long_t ifr = 0;
+    long_t sln = stringLength(str);
     oop ofr = cadr(args);
     if (nil != ofr) {			
         if (!isLong(ofr)) { 
@@ -2414,7 +2415,7 @@ static subr(string_copy)	// string from len
             fdumpln(stderr, oln);  
             fatal(0); 
         }
-	    int iln = getLong(oln);
+	    long_t iln = getLong(oln);
 	    if (iln < 0)   iln = 0;
 	    if (iln > sln) iln = sln;		
         assert(iln >= 0 && ifr + iln <= sln);
@@ -2447,11 +2448,11 @@ static subr(string_compare)	// string substring offset=0 length=strlen(substring
             fdumpln(stderr, oof);  
             fatal(0); 
         }
-        off = getLong(oof);
+        off = (int)getLong(oof);
     }
     
     oop oln = car(cdr(cddr(args)));
-    int len = stringLength(str);
+    long_t len = stringLength(str);
     if (nil != oln) {			
         if (!isLong(oln)) { 
             fprintf(stderr, "string-compare: non-integer length: ");  
@@ -2505,7 +2506,7 @@ static subr(long_double)
     oop arg = car(args); 
     if (is(Double, arg)) return arg; 
     if (!isLong(arg))    return nil;
-    return newDouble(getLong(arg));
+    return newDouble((double)getLong(arg));
 }
 
 static subr(string_long)
@@ -2535,8 +2536,8 @@ static subr(string_double)
 static subr(array)
 {
     oop arg = car(args);
-    int num = isLong(arg) ? getLong(arg) : 0;
-    return newArray(num);
+    long_t num = isLong(arg) ? getLong(arg) : 0;
+    return newArray((int)num);
 }
 
 static subr(arrayP)
@@ -2587,7 +2588,7 @@ static subr(insert_array_at)
 static subr(data)
 {
     oop arg = car(args);
-    int num = isLong(arg) ? getLong(arg) : 0;
+    long_t num = isLong(arg) ? getLong(arg) : 0;
     return newData(num);
 }
 
@@ -2600,7 +2601,7 @@ static subr(data_length)
         fdumpln(stderr, arg);  
         fatal(0); 
     }
-    return newLong(GC_size(arg));
+    return newLong((long)GC_size(arg));
 }
 
 static void idxtype(oop args, char *who)
@@ -2617,7 +2618,7 @@ static void valtype(oop args, char *who)
     fatal(0);
 }
 
-static inline unsigned long checkRange(oop obj, unsigned long offset, 
+static inline long_t checkRange(oop obj, unsigned long offset, 
                                        unsigned long eltsize, oop args, char *who)
 {
     if (isLong(obj)) return getLong(obj) + offset;
@@ -2626,7 +2627,7 @@ static inline unsigned long checkRange(oop obj, unsigned long offset,
 	    fdumpln(stderr, args);
 	    fatal(0);
     }
-    return (unsigned long)obj + offset;
+    return (long_t)obj + offset;
 }
 
 #define accessor(name, otype, ctype)											                        \
@@ -2635,12 +2636,12 @@ static inline unsigned long checkRange(oop obj, unsigned long offset,
 	    oop arg = args;	if (!isPair(arg)) arity(args, #name"-at");		                                \
 	    oop obj = getHead(arg);	arg= getTail(arg); if (!isPair(arg)) arity(args, #name"-at");		    \
 	    oop idx = getHead(arg);	arg= getTail(arg); if (!isLong(idx)) idxtype(args, #name"-at");		    \
-	    unsigned long off = getLong(idx);										                        \
+	    long_t off = getLong(idx);										                                \
 	    if (isPair(arg)) {												                                \
 	        oop mul  = getHead(arg); if (!isLong(mul)) idxtype(args, #name"-at");		                \
 	        off     *= getLong(mul); if (nil != getTail(arg)) arity(args, #name"-at");	                \
 	    } else off *= sizeof(ctype);											                        \
-	        return new##otype(*(ctype *)checkRange(obj, off, sizeof(ctype), args, #name"-at"));		    \
+	        return new##otype(*(ctype *)checkRange(obj, (unsigned long)off, sizeof(ctype), args, #name"-at"));		    \
     }															                                        \
 															                                            \
     static subr(set_##name##_at)											                            \
@@ -2649,15 +2650,16 @@ static inline unsigned long checkRange(oop obj, unsigned long offset,
 	    oop obj = getHead(arg);	arg= getTail(arg);	if (!isPair(arg)) arity(args, "set-"#name"-at");	\
 	    oop idx = getHead(arg);	arg= getTail(arg);	if (!isPair(arg)) arity(args, "set-"#name"-at");	\
 	    oop val = getHead(arg);	arg= getTail(arg);	if (!isLong(idx)) idxtype(args, "set-"#name"-at");	\
-	    unsigned long off = getLong(idx);										                        \
+	    long_t off = getLong(idx);										                                \
 	    if (isPair(arg)) {   	                                                                        \
             if (!isLong(val)) idxtype(args, "set-"#name"-at");                                          \
 	        off *= getLong(val);											                            \
 	        val  = getHead(arg); if (nil != getTail(arg)) arity(args, "set-"#name"-at");	            \
 	    } else off *= sizeof(ctype);				                                                    \
         if (!is##otype(val)) valtype(args, "set-"#name"-at");	                                        \
-	    *(ctype *)checkRange(obj, off, sizeof(ctype), args, "set-"#name"-at")= get##otype(val);			\
-	    return val;													\
+	    *(ctype *)checkRange(obj, (unsigned long)off, sizeof(ctype),                                    \
+                                   args, "set-"#name"-at")= get##otype(val);			                \
+	    return val;													                                    \
     }
 
 accessor(byte, Long, unsigned char)
@@ -2741,7 +2743,7 @@ static subr(allocate)
     arity2(args, "allocate");
     oop type = getHead(args);			if (!isLong(type)) return nil;
     oop size = getHead(getTail(args));	if (!isLong(size)) return nil;
-    return _newOops(getLong(type), sizeof(oop) * getLong(size));
+    return _newOops((int)getLong(type), sizeof(oop) * getLong(size));
 }
 
 static subr(allocate_atomic)
@@ -2749,7 +2751,7 @@ static subr(allocate_atomic)
     arity2(args, "allocate-atomic");
     oop type = getHead(args);			if (!isLong(type)) return nil;
     oop size = getHead(getTail(args));	if (!isLong(size)) return nil;
-    return _newBits(getLong(type), getLong(size));
+    return _newBits((int)getLong(type), getLong(size));
 }
 
 static subr(oop_at)
@@ -2757,7 +2759,7 @@ static subr(oop_at)
     arity2(args, "oop-at");
     oop obj = getHead(args);
     oop arg = getHead(getTail(args));	if (!isLong(arg)) return nil;
-    return oopAt(obj, getLong(arg));
+    return oopAt(obj, (int)getLong(arg));
 }
 
 static subr(set_oop_at)
@@ -2766,7 +2768,7 @@ static subr(set_oop_at)
     oop obj = getHead(args);
     oop arg = getHead(getTail(args));	if (!isLong(arg)) return nil;
     oop val = getHead(getTail(getTail(args)));
-    return oopAtPut(obj, getLong(arg), val);
+    return oopAtPut(obj, (int)getLong(arg), val);
 }
 
 static subr(not)
@@ -2781,7 +2783,7 @@ static subr(verbose)
     oop obj = car(args);
     if (nil == obj)   return newLong(opt_v);
     if (!isLong(obj)) return nil;
-    opt_v = getLong(obj);
+    opt_v = (int)getLong(obj);
     return obj;
 }
 
@@ -2790,7 +2792,7 @@ static subr(optimised)
     oop obj = car(args);
     if (nil == obj)   return newLong(opt_O);
     if (!isLong(obj)) return nil;
-    opt_O = getLong(obj);
+    opt_O = (int)getLong(obj);
     return obj;
 }
 
@@ -2839,7 +2841,7 @@ static subr(log)
 static subr(address_of)
 {
     oop arg = car(args);
-    return newLong((long)arg);
+    return newLong((long long)arg);
 }
 
 typedef struct { char *name;  imp_t imp; } subr_ent_t;
@@ -2850,7 +2852,7 @@ static subr_ent_t subr_tab[65536];
 
 static void replFile(FILE *stream, wchar_t *path)
 {
-    setVar(input, newLong((long)stream));
+    setVar(input, newLong((long long)stream));
     beginSource(path);
     oop obj = nil;
     GC_PROTECT(obj);
@@ -3089,7 +3091,7 @@ int main(int argc, char **argv)
     {
 	    subr_ent_t *ptr;
 	    for (ptr = subr_tab;  ptr->name; ++ptr) {
-	        wchar_t *name = wcsdup(mbs2wcs(ptr->name + 1));
+	        wchar_t *name = _wcsdup(mbs2wcs(ptr->name + 1));
 	        tmp = newSubr(name, ptr->imp, 0);
 	        if ('.' == ptr->name[0]) tmp = newFixed(tmp);
 	        define(globalNamespace, intern(name), tmp);
@@ -3112,7 +3114,7 @@ int main(int argc, char **argv)
 	    signal(SIGINT, sigint);
     }
 
-    setVar(output, newLong((long)stdout));
+    setVar(output, newLong((long long)stdout));
 
     while (is(Pair, getVar(arguments))) {
 	    oop argl     = getVar(arguments); GC_PROTECT(argl);
