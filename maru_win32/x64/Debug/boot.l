@@ -785,6 +785,7 @@
 (define-form list-do (var list . body)
   `(let ((_list_ ,list))
      (while _list_
+        (if (is-error) (abort))
        (let* ((,var (car _list_))) ,@body)	;; let* allows (list-do (vars...) list-of-lists)
        (set _list_ (cdr _list_)))))
 

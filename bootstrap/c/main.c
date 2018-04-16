@@ -41,6 +41,13 @@ extern int isatty(int);
 
 #include "ffi.h"
 
+struct global_repl_state {
+    int ReplStarted;
+    int ErrorOccured;
+};
+
+static struct global_repl_state GlobalReplState = { 0 };
+
 union Object;
 
 typedef union Object *oop;
@@ -409,8 +416,8 @@ static oop newExpr(oop defn, oop env)
 
 static oop newForm(oop fn, oop sym)	{ 
     oop obj = newOops(Form);	
-    set(obj, Form,function, fn);	
-    set(obj, Form,symbol, sym);	
+    set(obj, Form, function, fn);	
+    set(obj, Form, symbol, sym);	
     return obj; 
 }
 
@@ -1455,6 +1462,7 @@ static void oprintf(char *fmt, ...)
 
 static void fatal(char *reason, ...)
 {
+    GlobalReplState.ErrorOccured = 1;
     if (reason) {
 	    va_list ap;
 	    va_start(ap, reason);
@@ -1491,7 +1499,8 @@ static void fatal(char *reason, ...)
 }
 
 static oop evlist(oop obj, oop env);
-static int ReplStarted = 0;
+
+
 
 static oop eval(oop obj, oop env)
 {
@@ -1508,7 +1517,7 @@ static oop eval(oop obj, oop env)
 	    }
 	    case Pair: {
 	        if (opt_O < 2) arrayAtPut(traceStack, traceDepth++, obj);
-	        oop head= eval(getHead(obj), env);						
+	        oop head = eval(getHead(obj), env);
             GC_PROTECT(head);
 	        if (is(Fixed, head))
 		        head= apply(get(head, Fixed,function), getTail(obj), env);
@@ -1528,7 +1537,7 @@ static oop eval(oop obj, oop env)
 	        oop ass= findVariable(env, obj);
             if (nil == ass) {
                 fatal("eval: undefined variable: %P", obj);
-                if (ReplStarted != 0) return nil;
+                return nil;
             }
 	        return getTail(ass);
 	    }
@@ -1542,9 +1551,13 @@ static oop eval(oop obj, oop env)
 static oop evlist(oop obj, oop env)
 {
     if (!is(Pair, obj)) return obj;
-    oop head = eval(getHead(obj), env);			GC_PROTECT(head);
-    oop tail = evlist(getTail(obj), env);		GC_PROTECT(tail);
-    head = cons(head, tail);				    GC_UNPROTECT(tail);  GC_UNPROTECT(head);
+    oop head = eval(getHead(obj), env);
+    GC_PROTECT(head);
+    oop tail = evlist(getTail(obj), env);		
+    GC_PROTECT(tail);
+    head = cons(head, tail);				    
+    GC_UNPROTECT(tail);  
+    GC_UNPROTECT(head);
     return head;
 }
 
@@ -1564,7 +1577,10 @@ static oop apply(oop fun, oop arguments, oop env)
 	        oop callee	= get(fun, Expr,environment);			GC_PROTECT(callee);
 	        oop tmp	= nil;						                GC_PROTECT(tmp);
 	        while (is(Pair, formals)) {
-		        if (!is(Pair, actuals))	fatal("too few arguments applying %P to %P", fun, arguments);
+                if (!is(Pair, actuals)) {
+                    fatal("too few arguments applying %P to %P", fun, arguments);
+                    break;
+                }
 		        tmp     = cons(getHead(formals), getHead(actuals));
 		        callee  = cons(tmp, callee);
 		        formals = getTail(formals);
@@ -1794,9 +1810,18 @@ static subr(or)
 
 static subr(set)
 {
-    oop sym = car(args);				if (!is(Symbol, sym)) fatal("non-symbol in set: %P", sym);
-    oop var = findVariable(env, sym);	if (nil == var)		  fatal("set: undefined variable: %P", sym);
-    oop val = eval(cadr(args), env);	if (is(Expr, val) && (nil == get(val, Expr,name))) set(val, Expr,name, sym);
+    oop sym = car(args);				
+    if (!is(Symbol, sym)) {
+        fatal("non-symbol in set: %P", sym);
+        return nil;
+    }
+    oop var = findVariable(env, sym);	
+    if (nil == var) {
+        fatal("set: undefined variable: %P", sym);
+        return nil;
+    }
+    oop val = eval(cadr(args), env);	
+    if (is(Expr, val) && (nil == get(val, Expr,name))) set(val, Expr,name, sym);
     setTail(var, val);
     return val;
 }
@@ -2049,9 +2074,11 @@ static subr(exit)
     exit(isLong(n) ? (int)getLong(n) : 0);
 }
 
+void replFile(FILE *stream, wchar_t *path);
 static subr(abort)
 {
     fatal("aborting");
+    replFile(stdin, L"<stdin>");
     return nil;
 }
 
@@ -2844,6 +2871,11 @@ static subr(address_of)
     return newLong((long long)arg);
 }
 
+static subr(is_error) {
+    oop arg = newLong((long long)GlobalReplState.ErrorOccured);
+    return arg;
+}
+
 typedef struct { char *name;  imp_t imp; } subr_ent_t;
 
 // WARNING
@@ -2856,8 +2888,8 @@ static void replFile(FILE *stream, wchar_t *path)
     beginSource(path);
     oop obj = nil;
     GC_PROTECT(obj);
-    ReplStarted = TRUE;
-    for (;;) {
+    GlobalReplState.ReplStarted = TRUE;
+    for (;;) {       
 	    if (stream == stdin) {
 	        printf("==> ");
 	        fflush(stdout);
@@ -3011,6 +3043,7 @@ static subr_ent_t subr_tab[] = {
     { " cos",			        subr_cos                    },
     { " log",			        subr_log                    },    
     { " address-of",		    subr_address_of             },
+    { " is-error",              subr_is_error               },
     { 0,			            0                           }};
 
 int main(int argc, char **argv)
@@ -3123,7 +3156,9 @@ int main(int argc, char **argv)
 	    wchar_t *arg = get(args, String,bits);
 	    if (!wcscmp (arg, L"-v")) { ++opt_v; }
 	    else if (!wcscmp (arg, L"-b"))	{ ++opt_b; }
-	    else if (!wcscmp (arg, L"-g"))	{ ++opt_g;  opt_p= 0; }
+	    else if (!wcscmp (arg, L"-g"))	{ 
+            ++opt_g;  opt_p= 0; 
+        }
 	    else if (!wcscmp (arg, L"-O"))	{ ++opt_O; }
 	    else {
 	        if (!opt_b) {

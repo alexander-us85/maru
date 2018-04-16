@@ -5,20 +5,20 @@ d:\code\maru\bootstrap\c\wcs.c(17): warning C4996: 'mbstowcs': This function or 
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\stdlib.h(924): note: see declaration of 'mbstowcs'
 d:\code\maru\bootstrap\c\wcs.c(33): warning C4996: 'wcstombs': This function or variable may be unsafe. Consider using wcstombs_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\stdlib.h(1012): note: see declaration of 'wcstombs'
-..\..\bootstrap\c\main.c(1639): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
-..\..\bootstrap\c\main.c(1640): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
-..\..\bootstrap\c\main.c(1642): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
-..\..\bootstrap\c\main.c(1643): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-..\..\bootstrap\c\main.c(2067): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+..\..\bootstrap\c\main.c(1655): warning C4244: '=': conversion from 'long_t' to 'int', possible loss of data
+..\..\bootstrap\c\main.c(1656): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
+..\..\bootstrap\c\main.c(1658): warning C4244: '=': conversion from 'long_t' to 'long', possible loss of data
+..\..\bootstrap\c\main.c(1659): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+..\..\bootstrap\c\main.c(2094): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
-..\..\bootstrap\c\main.c(2117): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+..\..\bootstrap\c\main.c(2144): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
-..\..\bootstrap\c\main.c(2665): warning C4244: '=': conversion from 'long_t' to 'unsigned char', possible loss of data
-..\..\bootstrap\c\main.c(2666): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
-..\..\bootstrap\c\main.c(2667): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-..\..\bootstrap\c\main.c(2909): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+..\..\bootstrap\c\main.c(2692): warning C4244: '=': conversion from 'long_t' to 'unsigned char', possible loss of data
+..\..\bootstrap\c\main.c(2693): warning C4244: '=': conversion from 'long_t' to 'int32_t', possible loss of data
+..\..\bootstrap\c\main.c(2694): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+..\..\bootstrap\c\main.c(2941): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
-..\..\bootstrap\c\main.c(2919): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+..\..\bootstrap\c\main.c(2951): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\stdio.h(1192): note: see declaration of 'fscanf'
   libffi.lib(prep_cif.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
 LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
