@@ -30,12 +30,8 @@ extern int isatty(int);
 #include "wcs.c"
 #include "buffer.c"
 
-#if defined(WIN32)
 # include <malloc.h>
 # define swnprintf swprintf
-#else
-# define swnprintf swprintf
-#endif
 
 
 union Object;
@@ -1833,19 +1829,9 @@ static subr(ne)
     return newBool(!equal(lhs, rhs));
 }
 
-#if !defined(WIN32) && (!LIB_GC)
-static void profilingDisable(int);
-#endif
-
 static subr(exit)
 {
   oop n= car(args);
-#if !defined(WIN32) && (!LIB_GC)
-  if (opt_p)
-  {
-      profilingDisable(1);
-  }
-#endif
   exit(isLong(n) ? getLong(n) : 0);
 }
 
@@ -2446,9 +2432,6 @@ accessor(longdouble,	Double,	 long double)
 
 #undef accessor
 
-#if !defined(WIN32)
-# include <sys/mman.h>
-#endif
 
 static subr(native_call)
 {
@@ -2485,14 +2468,7 @@ static subr(native_call)
 	case Subr:	addr= get(obj, Subr,imp);				break;
 	default:	fatal("call: cannot call object of type %i", getType(obj));
     }
-    if (size) {
-#     if !defined(WIN32)
-	extern int getpagesize();
-	void *start = (void *)((long)addr & -(long)getpagesize());	// round down to page boundary for Darwin
-	size_t len  = (addr + size) - start;
-	if (mprotect(start, len, PROT_READ | PROT_WRITE | PROT_EXEC)) perror("mprotect");
-#     endif
-    }
+   
     return newLong(((int (*)())addr)(argv));
 }
 

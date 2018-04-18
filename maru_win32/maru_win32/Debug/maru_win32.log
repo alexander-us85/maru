@@ -1,9 +1,9 @@
 ﻿  eval.c
 ..\..\eval.c(215): warning C4996: 'wcsdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _wcsdup. See online help for details.
-  C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wstring.h(573): note: see declaration of 'wcsdup'
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\corecrt_wstring.h(573): note: see declaration of 'wcsdup'
 ..\..\eval.c(1408): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 ..\..\eval.c(1862): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _strdup. See online help for details.
-  C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\string.h(552): note: see declaration of 'strdup'
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.14393.0\ucrt\string.h(530): note: see declaration of 'strdup'
 ..\..\eval.c(1921): warning C4244: 'function': conversion from 'long' to 'wchar_t', possible loss of data
 ..\..\eval.c(2066): warning C4018: '<': signed/unsigned mismatch
 ..\..\eval.c(2190): warning C4244: '=': conversion from 'long' to 'wchar_t', possible loss of data
@@ -18,5 +18,8 @@
   libffi.lib(prep_cif.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
   Generating code
   Finished generating code
-  maru_win32.vcxproj -> D:\code\maru\maru_win32\Debug\maru_win32.exe
-  maru_win32.vcxproj -> D:\code\maru\maru_win32\Debug\maru_win32.pdb (Full PDB)
+libffi.lib(prep_cif.obj) : warning LNK4099: PDB 'libffi.pdb' was not found with 'libffi.lib(prep_cif.obj)' or at 'D:\Code\maru\maru_win32\Debug\libffi.pdb'; linking object as if no debug info
+libffi.lib(ffi.obj) : warning LNK4099: PDB 'libffi.pdb' was not found with 'libffi.lib(ffi.obj)' or at 'D:\Code\maru\maru_win32\Debug\libffi.pdb'; linking object as if no debug info
+libffi.lib(types.obj) : warning LNK4099: PDB 'libffi.pdb' was not found with 'libffi.lib(types.obj)' or at 'D:\Code\maru\maru_win32\Debug\libffi.pdb'; linking object as if no debug info
+  maru_win32.vcxproj -> D:\Code\maru\maru_win32\Debug\maru_win32.exe
+  maru_win32.vcxproj -> D:\Code\maru\maru_win32\Debug\maru_win32.pdb (Full PDB)
