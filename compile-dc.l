@@ -3,7 +3,7 @@
 ;;; ./eval compile-dc.l <filename>.dc
 
 (require "parser.l")
-(require "build/test-dc.g.l")
+(require "test-dc.g.l")
 
 (while *arguments*
   (let* ((arg (next-argument))

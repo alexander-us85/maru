@@ -14,9 +14,6 @@
     ((= type 'double)		sizeof-double)
     ((= type 'longdouble)	sizeof-longdouble)
     ((= type 'pointer)		sizeof-pointer)
-    ((= type 'int8)		1)
-    ((= type 'int16)		2)
-    ((= type 'int32)		4)
     (else			(error "unknown data field type: "type))))
 
 (define-function data-field-size (field)
@@ -39,9 +36,6 @@
     ((= type 'double)		alignof-double)
     ((= type 'longdouble)	alignof-longdouble)
     ((= type 'pointer)		alignof-pointer)
-    ((= type 'int8)		1)
-    ((= type 'int16)		2)
-    ((= type 'int32)		4)
     (else			(error "unknown data field type: "type))))
 
 (define-function data-field-alignment (field)

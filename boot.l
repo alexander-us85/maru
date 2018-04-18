@@ -36,7 +36,6 @@
 (define caaddr (lambda (x) (car (car (cdr (cdr x))))))
 (define cadddr (lambda (x) (car (cdr (cdr (cdr x))))))
 (define cddddr (lambda (x) (cdr (cdr (cdr (cdr x))))))
-(define caddddr (lambda (x) (car (cdr (cdr (cdr (cdr x)))))))
 
 (define memq
   (lambda (object list)
@@ -125,11 +124,11 @@
 		       (if (pair? object)
 			   (qq-element object)
 			 (list 'quote object))))
-      (lambda (expr)
+      (lambda (env expr)
 	(qq-object expr)))))
 
-(define define-form (form (lambda (name args . body)
-			    `(define ,name (form (lambda ,args ,@body))))))
+(define define-form (form (lambda (env name args . body)
+			    `(define ,name (form (lambda (*env* ,@args) ,@body))))))
 
 (define-form define-function (name args . body)
   `(define ,name (lambda ,args ,@body)))
@@ -156,10 +155,6 @@
 	len)
     0))
 
-(define-function list-last (list)
-  (while (pair? (cdr list)) (set list (cdr list)))
-  (car list))
-
 (define %list->array
   (lambda (list index)
     (if (pair? list)
@@ -173,9 +168,6 @@
 
 (define-function array-append (arr val)
   (set-array-at arr (array-length arr) val))
-
-(define-function array-last (arr)
-  (array-at arr (- (array-length arr) 1)))
 
 (define-function map1 (function list)
   (let ((head (cons)))
@@ -389,20 +381,10 @@
        ,@(map (lambda (_init_) (list 'set-oop-at '_self_ (set i (+ i 1)) _init_)) inits)
        _self_)))
 
-;; (define-function %make-make-inits (prefix inits)
-;;   (and inits
-;;        (cons (list 'set (list (concat-symbol prefix (caar inits)) 'self) (cadar inits))
-;; 	     (%make-make-inits prefix (cdr inits)))))
-
-(define-function %make-field-name (key)
-  (let* ((str (symbol->string key))
-	 (len (string-length str)))
-    (string->symbol (string-copy str 0 (- len 1)))))
-
 (define-function %make-make-inits (prefix inits)
   (and inits
-       (cons (list 'set (list (concat-symbol prefix (%make-field-name (car inits))) 'self) (cadr inits))
-	     (%make-make-inits prefix (cddr inits)))))
+       (cons (list 'set (list (concat-symbol prefix (caar inits)) 'self) (cadar inits))
+	     (%make-make-inits prefix (cdr inits)))))
 
 (define-form make (type . inits)
   `(let ((self (new ,type)))
@@ -439,70 +421,71 @@
 (define-structure <pair>	(head tail source))
 (define-structure <_array>	())
 (define-structure <array>	(size _array))
-(define-structure <expr>	(name definition environment profile))	(define-function expr? (obj) (= <expr> (type-of obj)))
-(define-structure <form>	(function symbol))			(define-function form? (obj) (= <form> (type-of obj)))
+(define-structure <expr>	(name defn ctx profile))		(define-function expr? (obj) (= <expr> (type-of obj)))
+(define-structure <form>	(function symbol))
 (define-structure <fixed>	(function))
-(define-structure <subr>	(_name _imp _sig _profile))		(define-function subr? (obj) (= <subr> (type-of obj)))
+(define-structure <subr>	(_name _imp _sig _profile))
+(define-structure <variable>	(name value env index type))		(define-function variable? (obj) (= <variable> (type-of obj)))
+(define-structure <env>		(parent level offset bindings stable))
+(define-structure <context>	(home env bindings callee pc))
 
 (define-function fixed (fun)
   (let ((self (new <fixed>)))
     (set (<fixed>-function self) fun)
     self))
 
-;; (define-function variable (name value env index . opt-type)
-;;   (let ((self (new <variable>)))
-;;     (set (<variable>-name  self) name)
-;;     (set (<variable>-value self) value)
-;;     (set (<variable>-env   self) env)
-;;     (set (<variable>-index self) index)
-;;     (set (<variable>-type  self) (car opt-type))
-;;     self))
+(define-function variable (name value env index . opt-type)
+  (let ((self (new <variable>)))
+    (set (<variable>-name  self) name)
+    (set (<variable>-value self) value)
+    (set (<variable>-env   self) env)
+    (set (<variable>-index self) index)
+    (set (<variable>-type  self) (car opt-type))
+    self))
 
-;; (define-function environment (parent)
-;;   (let ((self (new <env>)))
-;;     (set (<env>-parent 	 self) parent)
-;;     (set (<env>-level  	 self) (<env>-level  parent))
-;;     (set (<env>-offset 	 self) (<env>-offset parent))
-;;     (set (<env>-bindings self) (array))
-;;     self))
+(define-function environment (parent)
+  (let ((self (new <env>)))
+    (set (<env>-parent 	 self) parent)
+    (set (<env>-level  	 self) (<env>-level  parent))
+    (set (<env>-offset 	 self) (<env>-offset parent))
+    (set (<env>-bindings self) (array))
+    self))
 
-;; (define-function environment-define (env name value)
-;;   (let* ((bindings (<env>-bindings env))
-;; 	 (offset   (<env>-offset   env))
-;; 	 (var      (variable name value env offset)))
-;;     (set (<env>-offset env) (+ offset 1))
-;;     (array-append bindings var)))
+(define-function environment-define (env name value)
+  (let* ((bindings (<env>-bindings env))
+	 (offset   (<env>-offset   env))
+	 (var      (variable name value env offset)))
+    (set (<env>-offset env) (+ offset 1))
+    (array-append bindings var)))
 
-;; (define-function environment-find (env name)
-;;   (let* ((bindings (<env>-bindings env))
-;; 	 (offset   (<env>-offset   env))
-;; 	 (var      ())
-;; 	 (idx      0))
-;;     (while (and (not var) (< idx offset))
-;;       (if (= name (<variable>-name (array-at bindings idx)))
-;; 	  (set var (array-at bindings idx))
-;; 	(set idx (+ idx 1))))
-;;     var))
+(define-function environment-find (env name)
+  (let* ((bindings (<env>-bindings env))
+	 (offset   (<env>-offset   env))
+	 (var      ())
+	 (idx      0))
+    (while (and (not var) (< idx offset))
+      (if (= name (<variable>-name (array-at bindings idx)))
+	  (set var (array-at bindings idx))
+	(set idx (+ idx 1))))
+    var))
 
-;; (define-function global? (var)	(= 0 (<env>-level (<variable>-env var))))
+(define-function global? (var)	(= 0 (<env>-level (<variable>-env var))))
 
 ;;; local syntax
 
 (define-function make-with-form (args-body)
-  (and args-body `(lambda ,(car args-body) ,@(cdr args-body))))
+  (and args-body `(lambda (*env* ,@(car args-body)) ,@(cdr args-body))))
 
 (define-form with-forms (bindings . body)
-  (let* ((*env* (current-environment))
-	 (env   *env*))
+  (let ((env (environment *env*)))
     (while bindings
       (let* ((binding (car   bindings))
 	     (name    (car   binding))
 	     (fun     (cadr  binding))
 	     (var     (caddr binding))
 	     (exp     (list 'form (make-with-form fun) (make-with-form var))))
-	;;(environment-define env (caar bindings) (eval exp *env*))
-	(set env (cons (cons (caar bindings) (eval exp *env*)) env)))
-      (set bindings (cdr bindings)))
+	(environment-define env (caar bindings) (eval exp *env*))
+	(set bindings (cdr bindings))))
     (cons 'let (cons () (map-with expand body env)))))
 
 ;;; field accesors
@@ -513,7 +496,6 @@
 	     (make-instance-accessors name (cdr fields) (+ i 1)))))
 
 (define-form with-instance-accessors (type . body)
-  ;;(println "\n\nWITH-INST-ACC env = "(current-environment))
   `(with-forms ,(make-instance-accessors type (array-at %structure-fields (eval type)) 0)
     (let () ,@body)))
 
@@ -554,9 +536,9 @@
 (define-form define-selector (name . default)
   (let ((def (defined? name)))
     (if def
-	(if (selector? (cdr def))
-	    (list 'quote (cdr def))
-	  (error name" already defined as non-selector: " def))
+	(if (selector? (<variable>-value def))
+	    (list 'quote <variable>-value def)
+	  (error name" already defined as non-selector: " (<variable>-value def)))
       (let ()
 	(or default (set default `(args (error "selector "',name
 					       " has no method for "(array-at %type-names (type-of (car args)))
@@ -606,7 +588,6 @@
 
 (define-method do-dump  <string> ()	(%dump self))
 (define-method do-dump  <array> ()	(%dump self))
-
 (define-method do-print <selector> ()	(print "<selector "(<selector>-name self)">"))
 
 (define-method do-print <pair> ()
@@ -675,7 +656,7 @@
   ;;(println "; backtrace disabled")
   )
 
-;;(define-function printf (fmt arg) (print (format fmt arg)))
+(define-function printf (fmt arg) (print (format fmt arg)))
 
 ;;; multimethod
 
@@ -736,17 +717,6 @@
      (set ,list (cdr _list_))
      _head_))
 
-(define-form delete (list element)
-  `(let ((_elt ,element))
-     (if (= _elt (car ,list))
-	 (set ,list (cdr ,list))
-       (let ((_list ,list))
-	 (while (cdr _list)
-	   (if (!= _elt (cadr _list))
-	       (set _list (cdr _list))
-	     (set (cdr _list) (cddr _list))
-	     (set _list ())))))))
-
 (define-function member? (key list)
   (while (and (pair? list) (!= key (car list)))
     (set list (cdr list)))
@@ -785,7 +755,6 @@
 (define-form list-do (var list . body)
   `(let ((_list_ ,list))
      (while _list_
-        (if (is-error) (abort))
        (let* ((,var (car _list_))) ,@body)	;; let* allows (list-do (vars...) list-of-lists)
        (set _list_ (cdr _list_)))))
 
@@ -795,17 +764,6 @@
        (let*  ((,var (cdar _list_))) ,@body)
        (set _list_ (cdr _list_)))))
 
-(define-form lists-do (spec . body)
-  (let* ((vars   (map car  spec))
-	 (lists  (map (lambda (v) (concat-symbol '_l_ v)) vars))
-	 (cars   (map (lambda (l) (list 'car l)) lists))
-	 (inits  (map cadr spec)))
-    `(let ,(zip lists inits)
-       (while (pair? ,(car lists))
-	 (let ,(zip vars cars)
-	   ,@body
-	   ,@(map (lambda (l) (list 'set l (list 'cdr l))) lists))))))
-
 (define-function %generic-do (get len var col body)
   `(let* ((_col_ ,col)
 	  (_idx_ 0)
@@ -814,9 +772,9 @@
        (let* ((,var (,get _col_ _idx_))) ,@body)
        (set _idx_ (+ _idx_ 1)))))
 
-(define-form array-do (var arr . body)	(%generic-do 'array-at 'array-length var arr body))
+(define-form array-do (var arr . body)	(%generic-do array-at array-length var arr body))
 
-(define-form string-do (var str . body)	(%generic-do 'string-at 'string-length var str body))
+(define-form string-do (var str . body)	(%generic-do string-at string-length var str body))
 
 (define-method for-each <pair>   (function)	(list-do   _elt_ self (function _elt_)))
 (define-method for-each <array>  (function)	(array-do  _elt_ self (function _elt_)))
@@ -999,16 +957,6 @@
 	   (pair? b)
 	   (equal-lists a b)))))
 
-(define-function string-begins-with (string prefix)
-  (let ((target-len (string-length string))
-        (prefix-len (string-length prefix)))
-    (and (>= target-len prefix-len)
-         (let ((idx 0))
-           (while (and (< idx prefix-len)
-                       (= (string-at string idx) (string-at prefix idx)))
-             (incr idx))
-           (= idx prefix-len)))))
-
 ;;; unit testing
 
 (define-form unit-fail (expr)
@@ -1022,51 +970,22 @@
        `(let ((unit-name ,name))
 	  ,@body)))
 
-;;; assertions
-
-(define-function get-source-position (obj)
-  (while (and (pair? obj)
-	      (pair? (<pair>-source obj)))
-    (set obj (<pair>-source obj)))
-  (if (and (string? (car obj)) (long? (cdr obj)))
-      (concat-strings (car obj)":"(format "%i"(cdr obj))" ")
-    "?"))
-
-(define-form assert (what) `(or ,what (error ,(get-source-position what)"assertion failed: "',what)))
-
 ;;; namespace
 
-(define-function new-namespace (name . opts)
-  (let* ((parent (or (car opts) *global-namespace*))
-	 (ass    (cons name ()))
-	 (ns     (cons ass parent)))
-    (set-cdr ass ns)))
+(define *global* *globals*)
 
-(define-function namespace? (alist)
-  (and (pair?   alist)
-       (pair?   (car alist))
-       (symbol? (caar alist))
-       (= alist (cdar alist))))
+(define-form define-namespace (name parent)	`(define ,name (environment ,parent)))
 
-(define-form namespace-do (var ns . body)
-  `(let ((_ns_ ,ns))
-     (or (namespace? _ns_) (error "not a namespace: "_ns_))
-     (while (and (not (namespace? (set _ns_ (cdr _ns_)))) _ns_)
-       (let ((,var (car _ns_)))
-	 ,@body))))
-
-;;(define-form define-namespace (name parent)	`(define ,name (environment ,parent)))
-
-;;(define-form namespace (name)			`(set *globals* ,name))
+(define-form namespace (name)			`(set *globals* ,name))
 
 ;;; command line
 
-(define *load-paths*)
+(define *load-path*)
 
-(while (= "-L" (car *arguments*))
-  (let ()
-    (pop *arguments*)
-    (push *load-paths* (pop *arguments*))))
+(and (= "-L" (car *arguments*))
+     (let ()
+       (pop *arguments*)
+       (set *load-path* (pop *arguments*))))
 
 (define-form next-argument () '(pop *arguments*))
 
@@ -1078,14 +997,9 @@
     (and (> (verbose) 1) (println "=> "result))
     result))
 
-(define-function find-and-read-in (name paths)
-  (if paths
-      (or (read (concat-string (car paths) name))
-	  (find-and-read-in name (cdr paths)))
-    (read name)))
-
 (define-function find-and-read (name)
-  (find-and-read-in name *load-paths*))
+  (or (and *load-path* (read (concat-string *load-path* name)))
+      (read name)))
 
 (define-function load (name)
   (let ((exps (find-and-read name)))
@@ -1125,9 +1039,3 @@
       (array-append s c))
     (close f)
     (array->string s)))
-
-;;; misc
-
-(define-method nth <pair> (n)
-  (while (< 0 (decr n)) (set self (cdr self)))
-  (car self))

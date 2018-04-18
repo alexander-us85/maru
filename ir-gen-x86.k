@@ -11,7 +11,7 @@
 
 (define-structure <ir-gen-x86> (frame current-section callsize port))
 
-(define-function ir-gen-new ()	(make <ir-gen-x86> port: (string-port)))
+(define-function ir-gen-new ()	(make <ir-gen-x86> (port (string-port))))
 
 (define-function x86-mangle (s)
   (let* ((in  (symbol->string s))
@@ -99,7 +99,6 @@
     ((= type IR-INT64)		(emitln gen "	movl	"  location", %eax")
 				(emitln gen "	movl	4+"location", %edx"))
     ((ir-pointer-type? type)	(emitln gen "	movl	"  location", %eax"))
-    ((= type IR-LABEL)		(emitln gen "	movl	"  location", %eax"))
     ((= type IR-FLOAT32)	(emitln gen "	movss	"  location", %xmm0"))
     ((= type IR-FLOAT64)	(emitln gen "	movsd	"  location", %xmm0"))
     (else			(error "cannot load: "type))))
@@ -112,7 +111,6 @@
     ((= type IR-INT64)		(emitln gen "	movl	%eax, "	 location)
 				(emitln gen "	movl	%edx, 4+"location))
     ((ir-pointer-type? type)	(emitln gen "	movl	%eax, "	 location))
-    ((= type IR-LABEL)		(emitln gen "	movl	%eax, "  location))
     ((= type IR-FLOAT32)	(emitln gen "	movss	%xmm0, " location))
     ((= type IR-FLOAT64)	(emitln gen "	movsd	%xmm0, " location))
     (else			(error "cannot store: "type))))
@@ -221,20 +219,15 @@
 	 (cond
 	   ((and (ir-global? self.parameters) *optimise-globals*)	var)
 	   ((= self.type (<ir-variable>-type self.parameters))		(<ir-variable>-location var))
-	   ((= self.type IR-LABEL)					)
 	   (else							(ir-gen-x86-allocate gen self.type))))))
 
 (define-method ir-gen-x86 <ir-get-var> (gen)
   (or (<ir-variable>-location self.parameters) (error "var has no location "self.parameters))
   (or self.location (error "get-var has no location "self))
   (info gen 2 "# get var "self)
-  (cond
-    ((ir-struct-type? self.type)	(ir-gen-x86-move-struct self.type
-								(<ir-variable>-location self.parameters)
-								self.location gen))
-    ((ir-label-var? self.parameters)	(emitln gen "	movl	$"(ir-gen-x86-variable-name self.parameters)", %eax # LABEL"))
-    (else				(ir-gen-x86-load (<ir-variable>-type self.parameters)
-							 (<ir-variable>-location self.parameters) gen)))
+  (if (ir-struct-type? self.type)
+      (ir-gen-x86-move-struct self.type (<ir-variable>-location self.parameters) self.location gen)
+    (ir-gen-x86-load (<ir-variable>-type self.parameters) (<ir-variable>-location self.parameters) gen))
   (info gen 2 "# get var done"))
 
 (define-method ir-gen-x86-deallocate <ir-get-var> (gen)
@@ -265,19 +258,6 @@
 	  (ir-gen-x86-move-struct self.type (<ir-insn>-location value) self.location gen))
       (ir-gen-x86-store (<ir-variable>-type self.parameters) (<ir-variable>-location self.parameters) gen)
       (ir-gen-x86-store self.type self.location gen))))
-
-;
-
-(define-method ir-gen-x86-allocate <ir-define-label> (gen))
-
-(define-method ir-gen-x86 <ir-define-label> (gen)
-  (emitln gen "v_"(x86-mangle (symbol->string (car self.parameters)))":"))
-
-(define-method ir-gen-x86-allocate <ir-goto> (gen) (ir-gen-x86-allocate (car self.operands) gen))
-
-(define-method ir-gen-x86 <ir-goto> (gen)
-  (ir-gen-x86 (car self.operands) gen)
-  (emitln gen "	jmp	*%eax"))
 
 ;
 
@@ -411,7 +391,7 @@
 					  ))
 	  ((= self.type IR-FLOAT64)	(let ((label (ir-gen-x86-temp-label gen)))
 					  (ir-gen-x86-section gen 'data)
-					  (emitln gen	 "	.balign	8")
+					  (emitln gen	 "	.balign	4")
 					  (emitln gen label":	.long	"(int32-at value 0))
 					  (emitln gen	 "	.long	"(int32-at value 1))
 					  (ir-gen-x86-section gen 'text)
@@ -723,28 +703,21 @@
 	(else				(error "cannot generate unary "op" for type: "type))))))
 
 (define-method ir-gen-x86 <ir-neg> (gen)
-  (let ((type self.type)
-	(lhs  (car self.operands)))
-    (cond
-      ((= self.type IR-INT64)	(ir-gen-x86 lhs gen)
-				(emitln gen "	negl	%eax")
+  (cond
+    ((= self.type IR-INT64)	(emitln gen "	negl	%eax")
 				(emitln gen "	adcl	$0, %edx")
 				(emitln gen "	negl	%edx"))
-      ((= self.type IR-FLOAT32)	(let ((label (ir-gen-x86-temp-label gen)))
-				  (ir-gen-x86 lhs gen)
+    ((= self.type IR-FLOAT32)	(let ((label (ir-gen-x86-temp-label gen)))
 				  (ir-gen-x86-section gen 'data)
-				  (emitln gen "	.balign	16")
 				  (emitln gen label":	.long	-2147483648,0,0,0")
 				  (ir-gen-x86-section gen 'text)
 				  (emitln gen "	xorps	"label", %xmm0")))
-      ((= self.type IR-FLOAT64)	(let ((label (ir-gen-x86-temp-label gen)))
-				  (ir-gen-x86 lhs gen)
+    ((= self.type IR-FLOAT64)	(let ((label (ir-gen-x86-temp-label gen)))
 				  (ir-gen-x86-section gen 'data)
-				  (emitln gen "	.balign	16")
 				  (emitln gen label":	.long	0,-2147483648,0,0")
 				  (ir-gen-x86-section gen 'text)
 				  (emitln gen "	xorpd	"label", %xmm0")))
-      (else			(ir-gen-x86-unary self "neg" gen)))))
+    (else			(ir-gen-x86-unary self "neg" gen))))
 
 (define-method ir-gen-x86 <ir-com> (gen)
   (cond

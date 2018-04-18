@@ -2,7 +2,7 @@
 ;;;
 ;;; ./eval compile-with-tpeg.l <filename>.g ... > tee <filename>.l
 
-(require "build/tpeg.l")
+(require "tpeg.l")
 (require "record-case.l")
 (require "text-parser.l")
 
