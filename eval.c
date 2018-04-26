@@ -8,7 +8,8 @@
 #include <wchar.h>
 #include <locale.h>
 #include <math.h>
-
+#include <stdint.h>
+#include <stdbool.h>
 #include "ffi.h"
 #include <assert.h>
 
@@ -16,7 +17,7 @@ extern int isatty(int);
 
 
 
-#define	TAG_INT	1
+#define	TAG_INT	0
 //#define	LIB_GC	1
 
 #define GC_APP_HEADER	int type;
@@ -63,10 +64,11 @@ typedef struct {
 
 #define nil ((oop)0)
 
-enum { Undefined, Data, Long, Double, String, Symbol, Pair, _Array, Array, Expr, Form, Fixed, Subr, Variable, Env, Context };
+enum { Undefined, Data, Long, Double, String, Symbol, Pair, _Array, Array, Expr, Form, Fixed, Subr, Variable, Env, Context, Int64 };
 
 struct Data { int empty[0]; };
 struct Long	{ long	    bits; };
+struct Int64 { int64_t bits; };
 struct Double	{ double    bits; };
 struct String	{ oop       size;  wchar_t *bits; };	/* bits is in managed memory */
 struct Symbol	{ wchar_t  *bits; };
@@ -83,6 +85,7 @@ struct Context	{ oop 	    home, env, bindings, callee, pc; };
 union Object {
   struct Data		Data;
   struct Long		Long;
+  struct Int64      Int64;
   struct Double		Double;
   struct String		String;
   struct Symbol		Symbol;
@@ -115,7 +118,7 @@ static void fatal(char *reason, ...);
 # define checkType(OBJ, TYPE) _checkType(OBJ, TYPE, #TYPE, __FILE__, __LINE__)
   static inline oop _checkType(oop obj, int type, char *name, char *file, int line)
   {
-    if (obj && !((long)obj & 1) && !ptr2hdr(obj)->used)	fatal("%s:%i: attempt to access dead object %s\n", file, line, name);
+    if (obj && !((uint64_t)obj & 1) && !ptr2hdr(obj)->used)	fatal("%s:%i: attempt to access dead object %s\n", file, line, name);
     if (!is(type, obj))					fatal("%s:%i: typecheck failed for %s (%i != %i)\n", file, line, name, type, getType(obj));
     return obj;
   }
@@ -168,6 +171,9 @@ static oop newData(size_t len)		{ return _newBits(Data, len); }
 # define     isLong(X)			is(Long, (X))
   static oop newLong(long bits)		{ oop obj= newBits(Long);  set(obj, Long,bits, bits);  return obj; }
 # define     getLong(X)			get((X), Long,bits)
+  static oop newInt64(int64_t bits) { oop obj = newBits(Int64); set(obj, Int64, bits, bits); return obj; }
+  #define getInt64(X) get((X), Int64, bits)
+  #define isInt64(X) is(Int64, (X))
 #endif
 
 static void   setDouble(oop obj, double bits)	{		memcpy(&obj->Double.bits, &bits, sizeof(bits)); }
@@ -833,7 +839,7 @@ static void doprint(FILE *stream, oop obj, int storing)
     }
     case Symbol:	fprintf(stream, "%ls", get(obj, Symbol,bits));	break;
     case Pair: {
-#if 0
+#if 1
       if (nil != get(obj, Pair,source)) {
 	oop source= get(obj, Pair,source);
 	oop path= car(source);
@@ -1853,14 +1859,19 @@ static subr(open)
   FILE *stream= (FILE *)fopen(name, mode);
   free(name);
   if (stream) fwide(stream, wide);
-  return stream ? newLong((long)stream) : nil;
+  return stream ? newInt64((uint64_t)stream) : nil;
 }
 
 static subr(close)
 {
   oop arg= car(args);
-  if (!isLong(arg)) { fprintf(stderr, "close: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0); }
-  fclose((FILE *)getLong(arg));
+  if (!isLong(arg) && !isInt64(arg)) { fprintf(stderr, "close: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0);}
+  FILE *stream;
+  if (isLong(arg)) {
+      stream = (FILE *)getLong(arg);
+  }
+  else stream = (FILE *)getInt64(arg);
+  fclose((FILE *)stream);
   return arg;
 }
 
@@ -1868,8 +1879,12 @@ static subr(getb)
 {
   oop arg= car(args);
   if (nil == arg) arg= get(input, Variable,value);
-  if (!isLong(arg)) { fprintf(stderr, "getb: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0); }
-  FILE *stream= (FILE *)getLong(arg);
+  if (!isLong(arg) && !isInt64(arg)) { fprintf(stderr, "getb: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0);}
+  FILE *stream;
+  if (isLong(arg)) {
+      stream = (FILE *)getLong(arg);
+  }
+  else stream = (FILE *)getInt64(arg);
   int c= getc(stream);
   return (EOF == c) ? nil : newLong(c);
 }
@@ -1878,8 +1893,12 @@ static subr(getc)
 {
   oop arg= car(args);
   if (nil == arg) arg= get(input, Variable,value);
-  if (!isLong(arg)) { fprintf(stderr, "getc: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0); }
-  FILE *stream= (FILE *)getLong(arg);
+  if (!isLong(arg) && !isInt64(arg)) { fprintf(stderr, "getc: non-integer argument: ");  fdumpln(stderr, arg);  fatal(0); }
+  FILE *stream;
+  if (isLong(arg)) {
+      stream = (FILE *)getLong(arg);
+  }
+  else stream = (FILE *)getInt64(arg);
   int c= getwc(stream);
   return (WEOF == c) ? nil : newLong(c);
 }
@@ -2372,15 +2391,16 @@ static void valtype(oop args, char *who)
     fatal(0);
 }
 
-static inline unsigned long checkRange(oop obj, unsigned long offset, unsigned long eltsize, oop args, char *who)
+static inline uint64_t checkRange(oop obj, unsigned long offset, unsigned long eltsize, oop args, char *who)
 {
     if (isLong(obj)) return getLong(obj) + offset;
     if (offset + eltsize > GC_size(obj)) {
 	fprintf(stderr, "\n%s: index (%ld) out of range: ", who, offset);
 	fdumpln(stderr, args);
 	fatal(0);
+    exit(666);
     }
-    return (unsigned long)obj + offset;
+    return (uint64_t)obj + offset;
 }
 
 #define accessor(name, otype, ctype)											\
@@ -2453,9 +2473,9 @@ static subr(native_call)
 #else
 				argv.f[argc]= getDouble(arg);					break;
 #endif
- 	    case String:	argv.l[argc]= (long)wcs2mbs(get(arg, String,bits));		break;
-	    case Subr:		argv.l[argc]= (long)get(arg, Subr,imp);				break;
-	    default:		argv.l[argc]= (long)arg;					break;
+ 	    case String:	argv.l[argc]= (uint64_t)wcs2mbs(get(arg, String,bits));		break;
+	    case Subr:		argv.l[argc]= (uint64_t)get(arg, Subr,imp);				break;
+	    default:		argv.l[argc]= (uint64_t)arg;					break;
 	}
 	++argc;
     }
@@ -2630,7 +2650,7 @@ static subr(log)
 static subr(address_of)
 {
   oop arg= car(args);
-  return newLong((long)arg);
+  return newLong((uint64_t)arg);
 }
 
 #include <winsock.h>
@@ -2701,7 +2721,7 @@ static subr_ent_t subr_tab[256];
 
 static void saver(FILE *out, void *ptr)
 {
-    oop obj= (oop)ptr;								assert(ptr && !((long)ptr & 1));
+    oop obj= (oop)ptr;								assert(ptr && !((uint64_t)ptr & 1));
     int type= ptr2hdr(ptr)->type;
     if (out) put32(out, type);
     switch (type) {
@@ -2733,7 +2753,7 @@ static void saver(FILE *out, void *ptr)
 
 static void loader(FILE *in, void *ptr)
 {
-    oop obj= (oop)ptr;								assert(ptr && !((long)ptr & 1));
+    oop obj= (oop)ptr;								assert(ptr && !((uint64_t)ptr & 1));
     int tmp32;
     int type= get32(in, &tmp32);
     ptr2hdr(ptr)->type= type;
@@ -2800,7 +2820,7 @@ static subr(save)
 
 static void replFile(FILE *stream, wchar_t *path)
 {
-  set(input, Variable,value, newLong((long)stream));
+  set(input, Variable,value, newLong((uint64_t)stream));
   beginSource(path);
   for (;;) {
     if (stream == stdin) {
@@ -3260,7 +3280,7 @@ int main(int argc, char **argv)
 #endif
   }
 
-  set(output, Variable,value, newLong((long)stdout));
+  set(output, Variable,value, newLong((uint64_t)stdout));
 
   if (!repled) {
     if (!opt_b) replPath(L"boot.l");

@@ -54,7 +54,7 @@ typedef struct _gcheader
   struct _gcfinaliser	*finalisers;
 #ifndef NDEBUG
   const char	*file;
-  long		 line;
+  long		     line;
   const char	*func;
 #endif
 #if defined(GC_APP_HEADER)
@@ -63,7 +63,7 @@ typedef struct _gcheader
 } gcheader;
 
 static inline void *hdr2ptr(gcheader *hdr)	{ return (void *)(hdr + 1); }
-static inline gcheader *ptr2hdr(void *ptr)	{ return (gcheader *)ptr - 1; }
+static inline gcheader *ptr2hdr(void *ptr)	{ return (gcheader *)ptr - 1; } // TODO:  Stack overflow here in debug build
 
 #ifndef NDEBUG
 
@@ -250,7 +250,7 @@ GC_API void GC_default_mark_function(void *ptr)
   while (pos <= lim)
     {
       void *field= *pos;
-      if (field && !((long)field & 1))
+      if (field && !((int64_t)field & 1))
 	GC_mark(field);
       ++pos;
     }
@@ -260,7 +260,7 @@ GC_mark_function_t GC_mark_function= GC_default_mark_function;
 
 GC_API void GC_mark(void *ptr)
 {
-  if ((long)ptr & 1) return;
+  if ((int64_t)ptr & 1) return;
   gcheader *hdr= ptr2hdr(ptr);
 #if VERBOSE > 3
   fprintf(stderr, "mark? %p -> %p used %d atom %d mark %d\n", ptr, hdr, hdr->used, hdr->atom, hdr->mark);
@@ -505,7 +505,7 @@ static void put32 (FILE *out, uint32_t value)	{ fwrite(&value, sizeof(value), 1,
 static void putobj(FILE *out, void *value)
 {
     //printf("  field %p\n", value);
-    if (value && !((long)value & 1))
+    if (value && !((uint64_t)value & 1))
 	fwrite(&ptr2hdr(value)->finalisers, sizeof(void *), 1, out);
     else
 	fwrite(&value, sizeof(void *), 1, out);
@@ -575,7 +575,7 @@ static int32_t get32(FILE *in, int32_t *p)	{ if(fread(p, sizeof(*p), 1, in));  r
 static void *getobj(FILE *in, void **value)
 {
     if (fread(value, sizeof(void *), 1, in));
-    if (*value && !(((long)*value) & 1)) (intptr_t)*value += (long)gcbase.next;
+    if (*value && !(((uint64_t)*value) & 1)) (intptr_t)*value += (uint64_t)gcbase.next;
     //printf("  field %p\n", *value);
     return *value;
 }

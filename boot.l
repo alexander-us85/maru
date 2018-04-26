@@ -1039,3 +1039,7 @@
       (array-append s c))
     (close f)
     (array->string s)))
+
+(require "parser.l")
+(require "peg-compile.l") 
+(require "peg-boot.l")

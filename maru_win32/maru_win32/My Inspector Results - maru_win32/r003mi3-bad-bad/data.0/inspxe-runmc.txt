@@ -1,0 +1,27 @@
+
+=== Start: [2018/04/20 23:44:03] === 
+Analysis started...
+Result file: D:\Code\maru\maru_win32\maru_win32\My Inspector Results - maru_win32\r003mi3\r003mi3.inspxe 
+Analysis started for D:\Code\maru\maru_win32\x64\Debug\maru_win32.exe (pid = 7132) 
+Loaded module: D:\Code\maru\maru_win32\x64\Debug\maru_win32.exe, address range [0x7ff64cc10000-0x7ff64cc39fff] 
+Loaded module: C:\Program Files (x86)\IntelSWTools\Inspector 2018\bin64\dnclrprof.dll, address range [0x7ffa549c0000-0x7ffa54a0dfff], minimal analysis 
+Loaded module: C:\WINDOWS\System32\gdi32full.dll, address range [0x7ffa64bb0000-0x7ffa64d42fff] 
+Loaded module: C:\WINDOWS\System32\KERNELBASE.dll, address range [0x7ffa64d50000-0x7ffa64fb5fff] 
+Loaded module: C:\WINDOWS\System32\msvcp_win.dll, address range [0x7ffa64fc0000-0x7ffa6505afff] 
+Loaded module: C:\WINDOWS\System32\ucrtbase.dll, address range [0x7ffa65860000-0x7ffa65955fff] 
+Loaded module: C:\WINDOWS\System32\win32u.dll, address range [0x7ffa65960000-0x7ffa6597ffff] 
+Loaded module: C:\WINDOWS\System32\bcryptPrimitives.dll, address range [0x7ffa65c00000-0x7ffa65c71fff], minimal analysis 
+Loaded module: C:\WINDOWS\System32\msvcrt.dll, address range [0x7ffa65df0000-0x7ffa65e8cfff] 
+Loaded module: C:\WINDOWS\System32\RPCRT4.dll, address range [0x7ffa663b0000-0x7ffa664cefff] 
+Loaded module: C:\WINDOWS\System32\combase.dll, address range [0x7ffa664e0000-0x7ffa667e7fff], minimal analysis 
+Loaded module: C:\WINDOWS\System32\KERNEL32.DLL, address range [0x7ffa66cb0000-0x7ffa66d5dfff] 
+Loaded module: C:\WINDOWS\System32\ole32.dll, address range [0x7ffa66d60000-0x7ffa66ea8fff] 
+Loaded module: C:\WINDOWS\System32\sechost.dll, address range [0x7ffa66eb0000-0x7ffa66f0afff] 
+Loaded module: C:\WINDOWS\System32\USER32.dll, address range [0x7ffa66f10000-0x7ffa6709efff] 
+Loaded module: C:\WINDOWS\System32\GDI32.dll, address range [0x7ffa670a0000-0x7ffa670c7fff] 
+Loaded module: C:\WINDOWS\System32\ADVAPI32.dll, address range [0x7ffa68690000-0x7ffa68730fff] 
+Loaded module: C:\WINDOWS\System32\IMM32.DLL, address range [0x7ffa68740000-0x7ffa6876cfff] 
+Loaded module: C:\WINDOWS\SYSTEM32\ntdll.dll, address range [0x7ffa687b0000-0x7ffa6898ffff] 
+Loaded module: C:\WINDOWS\SYSTEM32\VCRUNTIME140D.dll, address range [0x7ffa5ef40000-0x7ffa5ef60fff] 
+Loaded module: C:\WINDOWS\SYSTEM32\ucrtbased.dll, address range [0x7ffa4a8e0000-0x7ffa4aa99fff] 
+Warning: Detected fatal exception in the application. See result for details. 

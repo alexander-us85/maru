@@ -1,0 +1,18 @@
+-r
+D:\Code\maru\maru_win32\maru_win32\My Inspector Results - maru_win32\r003mi3
+--check-invalid-access
+--no-analyze-stack
+--leak-maximum=100000
+--leak-check-on-exit
+--leak-check-on-demand
+--check-resource-leaks
+--leak-check-report-reachable
+--freelist-vol=1000000
+--guard-zone-size=32
+--stack-depth=16
+--no-close-console
+--mrte-mode=auto
+--heartbeat=1
+--enable-memory-growth
+--
+D:\Code\maru\maru_win32\x64\Debug\maru_win32.exe
